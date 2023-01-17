@@ -21,7 +21,7 @@ ul {
     align-items: center;
     justify-items: center;
 
-    padding-bottom: 13.0625px;
+    padding-bottom: 10px;
     border: 2px solid black;
 }
 
@@ -60,10 +60,21 @@ ul {
     font-weight: bold;
     font-size: xx-large;
     text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    user-select: none;
 
     width: 100px;
     height: 100px;
     margin-top: 6px;
 
     overflow: hidden;
+}
+
+.button-animation {
+    animation-name: dim-button;
+    animation-duration: 0.5s;
+}
+
+@keyframes dim-button {
+    from {filter: brightness(0.5);}
+    to {filter: brightness(1);}
 }
