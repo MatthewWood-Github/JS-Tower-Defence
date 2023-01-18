@@ -24,7 +24,6 @@ function buttonAnimation(id) {
     elem.classList.add("button-animation");
     currentUnit = elem;
     updateBorders();
-    selectedUnit = createUnit()
 }
 
 function placeUnit() {
@@ -36,6 +35,90 @@ function placeUnit() {
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
+
+var mouseX = 0;
+var mouseY = 0;
+
+enemies = [];
+
+const speed = {
+    slow: 1,
+    normal: 2,
+    fast: 4,
+    faster: 8,
+    superfast: 16,
+    insane: 32,
+    godspeed: 64
+}
+
+const track = {
+    img: new Image(),
+    sprite: "Sprites/track.png",
+    nodes: [{x: 0, y: 256}, // Start
+            {x: 384, y: 256}, 
+            {x: 384, y: 512},
+            {x: 768, y: 512}, 
+            {x: 768, y: 256}, 
+            {x: 1152, y: 256}, 
+            {x: 1152, y: 1024} // Terminal
+            ],
+}
+
+function getMousePos(e) {
+    var rect = canvas.getBoundingClientRect();
+    return {
+        x: (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
+        y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
+    };
+}
+
+function start() { 
+    track["img"].src = track["sprite"];
+    requestAnimationFrame(draw);
+}
+
+function draw() {
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Calculate enemy position and direction
+    enemies.forEach(obj => {
+        ctx.drawImage(obj.img, obj.x, obj.y, 128, 128);
+
+        // Kill object at end
+        if (obj.progress == track["nodes"].length-1) {
+            enemies.splice(enemies.indexOf(obj), 1)
+            // TODO Add lose condition
+            return;
+        }
+
+        let currentWaypoint = track["nodes"][obj.progress];
+        let nextWaypoint = track["nodes"][obj.progress+1];
+
+        let differenceX = nextWaypoint.x - currentWaypoint.x;
+        let differenceY = nextWaypoint.y - currentWaypoint.y;
+
+        // If moving horizontal
+        if (currentWaypoint.y == nextWaypoint.y) {
+            if (differenceX >= 0) obj.x += obj.speed;
+            else if (differenceX < 0) obj.x -= obj.speed;
+
+            if (obj.x == nextWaypoint.x) obj.progress++;
+        }
+
+        // If moving vertical
+        else if (currentWaypoint.x == nextWaypoint.x) {
+            if (differenceY >= 0) obj.y += obj.speed;
+            else if (differenceY < 0) obj.y -= obj.speed;
+
+            if (obj.y == nextWaypoint.y) obj.progress++;
+        }
+    });
+
+    ctx.drawImage(track["img"], 0, 0)
+
+    requestAnimationFrame(draw);
+}
 
 class Enemy {
     constructor(name, health, speed, sprite, x, y) {
@@ -50,113 +133,44 @@ class Enemy {
     }
 }
 
-var mouseX = 0;
-var mouseY = 0;
-
-enemies = [];
-
-const track = {
-    img: new Image(),
-    sprite: "track.png",
-    nodes: [[0, 256], [384, 256], [384, 512], [768, 512], [768, 256], [1152, 256], [1152, 1024]]
-}
-
-function getMousePos(e) {
-    var rect = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
-        y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-    };
-}
-
-function init() { 
-    track["img"].src = track["sprite"];
-    requestAnimationFrame(draw);
-}
-
-function draw() {
-    ctx.globalCompositeOperation = "destination-over";
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    enemies.forEach(obj => {
-        ctx.drawImage(obj.img, obj.x, obj.y, 128, 128);
-        if (obj.progress == track["nodes"].length-1) {
-            enemies.splice(enemies.indexOf(obj), 1)
-            return;
-        }
-
-        differenceX = track["nodes"][obj.progress+1][0] - track["nodes"][obj.progress][0];
-        differenceY = track["nodes"][obj.progress+1][1] - track["nodes"][obj.progress][1];
-
-        if (track["nodes"][obj.progress][1] == track["nodes"][obj.progress+1][1]) {
-            if (differenceX >= 0) obj.x += obj.speed;
-            if (differenceX < 0) obj.x -= obj.speed;
-            
-            if (obj.x == track["nodes"][obj.progress+1][0]) obj.progress++;
-        }
-        else if (track["nodes"][obj.progress][0] == track["nodes"][obj.progress+1][0]) {
-            if (differenceY >= 0) obj.y += obj.speed;
-            if (differenceY < 0) obj.y -= obj.speed;
-
-            if (obj.y == track["nodes"][obj.progress+1][1]) obj.progress++;
-        }
-    });
-
-    ctx.drawImage(track["img"], 0, 0)
-
-    requestAnimationFrame(draw);
-}
-
-  
-document.getElementById("game").onclick = placeUnit;
-addEventListener("mousemove", (e) => {getMousePos(e)});
-
-function wait(ms){
-    var start = new Date().getTime();
-    var end = start;
-    while(end < start + ms) {
-      end = new Date().getTime();
-   }
- }
-
 addEventListener("keydown", (e) => {
     switch (e.key) {
         case ("q"):
-            enemies.push(new Enemy("greedo", 1, 4, "greedo.jpg", 0, 256));
+            enemies.push(new Enemy("greedo", 1, speed.fast, "Sprites/greedo.jpg", 0, 256));
             break;
         case ("w"):
-            enemies.push(new Enemy("troll", 1, 2, "trollface.jpg", 0, 256));
+            enemies.push(new Enemy("troll", 1, speed.slow, "Sprites/trollface.jpg", 0, 256));
             break;
         case ("e"):
-            enemies.push(new Enemy("takeoff", 1, 32, "takeoff.jpg", 0, 256));
+            enemies.push(new Enemy("takeoff", 1, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
             break;
         case ("r"):
-            enemies.push(new Enemy("shanks", 1, 8, "Shanks01.png", 0, 256));
+            enemies.push(new Enemy("paul", 1, speed.faster, "Sprites/paul.jpg", 0, 256));
             break;
-        case ("t"):
+        case ("m"):
             console.clear();
             console.table(enemies);
             break;    
-        case ("y"):
+        case ("t"):
             spawnWave(50 , 100);
             break;          
     }
 });
 
-populateOptions();
-init();
-
 function spawnWave(amount, interval) {
     let counter = 0;
 
     let wave = setInterval(function() {
-        enemies.push(new Enemy("takeoff", 1, 16, "takeoff.jpg", 0, 256)); 
+        // TODO - REPLACE WITH WAVE CONST
+        enemies.push(new Enemy("takeoff", 1, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
         counter++;
 
         if (counter > amount) clearInterval(wave);
     }, interval)
 }
 
+document.getElementById("game").onclick = placeUnit;
+addEventListener("mousemove", (e) => {getMousePos(e)});
 
-
-//sendWave(new Enemy("takeoff", 1, 2, "takeoff.jpg", 0, 256), 50);
+populateOptions();
+start();

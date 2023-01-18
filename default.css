@@ -38,7 +38,7 @@ ul {
 
 .game {
     height: 100%;
-    background-image: url("background.png");
+    background-image: url("Sprites/background.png");
     position: relative;
 
     z-index: 1;

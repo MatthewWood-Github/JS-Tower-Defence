@@ -2,7 +2,7 @@
 <html>
     <head>
         <meta charset='utf-8'>
-        <title> Tower Defence </title>
+        <title> Tower Defense </title>
         <link rel="shortcut icon" type="image/x-icon" href="favicon.png" />
         <link rel="stylesheet" href="default.css">
         
@@ -10,18 +10,18 @@
     <body>
         <div class="main" id="main">
             <canvas class="game" id="game" width="1536" height="1024">
-                <img src="track.png" alt="track" id="track" style="z-index: 2;" draggable="false"> </img>
+                <img src="Sprites/track.png" alt="track" id="track" style="z-index: 2;" draggable="false"> </img>
                 <div class="can-place" id="can-place" style="width: 256px; height: 256px; left: 512px; top: 256px"></div>
             </canvas>
             <div class="shop", id="shop-container">
                 <ul id="shop-options">
-                    <li class="unit-slot" id="greedo" onclick="buttonAnimation(this.id)" style="background-image: url('greedo.jpg');"> £210 </li>
+                    <li class="unit-slot" id="greedo" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/greedo.jpg');"> £210 </li>
 
-                    <li class="unit-slot" id="Trollface" onclick="buttonAnimation(this.id)" style="background-image: url('trollface.jpg');"> £150 </li>
+                    <li class="unit-slot" id="Trollface" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/trollface.jpg');"> £150 </li>
 
-                    <li class="unit-slot" id="Takeoff" onclick="buttonAnimation(this.id)" style="background-image: url('takeoff.jpg');"> £530 </li>
+                    <li class="unit-slot" id="Takeoff" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/takeoff.jpg');"> £530 </li>
 
-                    <li class="unit-slot" id="Shanks" onclick="buttonAnimation(this.id)" style="background-image: url('Shanks01.png');"> £1050 </li>                  
+                    <li class="unit-slot" id="Shanks" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/Shanks01.png');"> £1050 </li>                  
                 </ul>
             </div>
         </div>
