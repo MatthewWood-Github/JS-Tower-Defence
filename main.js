@@ -39,7 +39,11 @@ const ctx = canvas.getContext("2d");
 var mouseX = 0;
 var mouseY = 0;
 
-enemies = [];
+const heartIcon = new Image();
+heartIcon.src = "Sprites/heart.png";
+health = 200;
+
+const enemies = [];
 
 const speed = {
     slow: 1,
@@ -77,6 +81,10 @@ function start() {
     requestAnimationFrame(draw);
 }
 
+function checkWin() {
+    if (health <= 0) {console.log("Lost"); health = 200;}
+}
+
 function draw() {
     ctx.globalCompositeOperation = "destination-over";
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -88,7 +96,8 @@ function draw() {
         // Kill object at end
         if (obj.progress == track["nodes"].length-1) {
             enemies.splice(enemies.indexOf(obj), 1)
-            // TODO Add lose condition
+            health -= obj.health;
+            checkWin();
             return;
         }
 
@@ -100,22 +109,27 @@ function draw() {
 
         // If moving horizontal
         if (currentWaypoint.y == nextWaypoint.y) {
-            if (differenceX >= 0) obj.x += obj.speed;
-            else if (differenceX < 0) obj.x -= obj.speed;
+            let magnitude = obj.speed * Math.sign(differenceX);
+            obj.moveHorizontal(magnitude);
 
             if (obj.x == nextWaypoint.x) obj.progress++;
         }
 
         // If moving vertical
         else if (currentWaypoint.x == nextWaypoint.x) {
-            if (differenceY >= 0) obj.y += obj.speed;
-            else if (differenceY < 0) obj.y -= obj.speed;
+            let magnitude = obj.speed * Math.sign(differenceY)
+            obj.moveVertical(magnitude);
 
             if (obj.y == nextWaypoint.y) obj.progress++;
         }
     });
 
-    ctx.drawImage(track["img"], 0, 0)
+    ctx.drawImage(track["img"], 0, 0);
+    ctx.drawImage(heartIcon, 8, 0, 128, 128);
+    ctx.font = "64px Arial";
+    ctx.fillStyle = "white";
+    ctx.textAlign = "center";
+    ctx.fillText(`${health}`, 200, 80);
 
     requestAnimationFrame(draw);
 }
@@ -131,21 +145,29 @@ class Enemy {
         this.y = y;
         this.progress = 0;
     }
+
+    moveHorizontal(magnitude) {
+        this.x += magnitude;
+    }
+
+    moveVertical(magnitude) {
+        this.y += magnitude;
+    }
 }
 
 addEventListener("keydown", (e) => {
     switch (e.key) {
-        case ("q"):
-            enemies.push(new Enemy("greedo", 1, speed.fast, "Sprites/greedo.jpg", 0, 256));
-            break;
-        case ("w"):
-            enemies.push(new Enemy("troll", 1, speed.slow, "Sprites/trollface.jpg", 0, 256));
+        case ("r"):
+            enemies.push(new Enemy("takeoff", 20, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
             break;
         case ("e"):
-            enemies.push(new Enemy("takeoff", 1, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
+            enemies.push(new Enemy("paul", 15, speed.faster, "Sprites/paul.jpg", 0, 256));
             break;
-        case ("r"):
-            enemies.push(new Enemy("paul", 1, speed.faster, "Sprites/paul.jpg", 0, 256));
+        case ("w"):
+            enemies.push(new Enemy("greedo", 5, speed.normal, "Sprites/greedo.jpg", 0, 256));
+            break;
+        case ("q"):
+            enemies.push(new Enemy("troll", 200, speed.slow, "Sprites/trollface.jpg", 0, 256));
             break;
         case ("m"):
             console.clear();
@@ -162,10 +184,10 @@ function spawnWave(amount, interval) {
 
     let wave = setInterval(function() {
         // TODO - REPLACE WITH WAVE CONST
-        enemies.push(new Enemy("takeoff", 1, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
+        enemies.push(new Enemy("takeoff", 4, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
         counter++;
 
-        if (counter > amount) clearInterval(wave);
+        if (counter >= amount) clearInterval(wave);
     }, interval)
 }
 
