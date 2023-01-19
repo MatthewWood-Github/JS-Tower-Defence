@@ -22,7 +22,7 @@ function buttonAnimation(id) {
     elem.classList.remove("button-animation");
     void elem.offsetWidth;
     elem.classList.add("button-animation");
-    currentUnit = new Unit("Shanks", 1050, 1, 250, 1, "Sprites/Shanks01-outline-yellow.png");;
+    currentUnit = new Unit("Shanks", 1050, 1, 250, 1000, "Sprites/Shanks01-outline-yellow.png");;
     currentShopUnit = elem;
     updateBorders();
 }
@@ -42,7 +42,7 @@ const track = {
             {x: 768, y: 256}, 
             {x: 1152, y: 256}, 
             {x: 1152, y: 1024} // Terminal
-            ],
+            ]
 }
 
 const enemies = [];
@@ -70,6 +70,9 @@ const placeAtFeetRatio = 1.3;
 const unitAdjustedX = unitSize/2;
 const unitAdjustedY = unitSize/1.3;
 
+const enemySize = 128;
+const enemyAdjustedSize = enemySize/2;
+
 class Unit {
     constructor(name, cost, damage, range, attackSpeed, spriteSource, x, y) {
         this.name = name;
@@ -80,6 +83,8 @@ class Unit {
         this.sprite = new Image();
         this.sprite.src = spriteSource;
         this.sprite.zIndex = 2;
+
+        this.lastAttack = 0;
 
         this.enemyQueue = [];
     }
@@ -93,15 +98,27 @@ class Unit {
     }
 
     attack(target) {
-        target.health -= this.damage;
+        console.log(this.canAttack())
+        console.log(this.lastAttack)
+        if (this.canAttack()) {
+            this.lastAttack = Date.now();
+            target.health -= this.damage;
+            target.kill();
+        }
+    }
+
+    canAttack() {
+        if (this.lastAttack == 0) return true;
+        if (Date.now() >= this.lastAttack + this.attackSpeed) return true;
+        else return false;
     }
 
     ability() {
         return;
     }
 
-    queueListener() {
-        
+    getAdjustedPosition() {
+        return {x: this.x + unitAdjustedX, y: this.y + unitAdjustedX}
     }
 }
 
@@ -124,9 +141,17 @@ class Enemy {
     moveVertical(magnitude) {
         this.y += magnitude;
     }
+
+    getAdjustedPosition() {
+        return {x: this.x + enemyAdjustedSize, y: this.y + enemyAdjustedSize};
+    }
+
+    kill() {
+        if (this.health <= 0) enemies.splice(enemies.indexOf(this), 1);
+    }
 }
 
-currentUnit = new Unit("Shanks", 1050, 1, 250, 1, "Sprites/Shanks01-outline-yellow.png");
+currentUnit = null;
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
@@ -134,28 +159,61 @@ function getMousePos(e) {
     mouseY = (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
 }
 
-function start() { 
-    track["img"].src = track["sprite"];
-    requestAnimationFrame(draw);
+function checkWin() {
+    if (health <= 0) health = 200;
 }
 
-function checkWin() {
-    if (health <= 0) {console.log("Lost"); health = 200;}
+function drawRange(unit, x, y) {
+    ctx.beginPath();
+    ctx.arc(x, y, unit.range, 0, 2 * Math.PI);
+    ctx.fillStyle = "#00ff00a3";
+    ctx.fill();
+    ctx.lineWidth = 5;
+    ctx.stroke();
 }
 
 function drawCurrentUnit() {
     if (!(currentUnit === null)) {
         ctx.drawImage(currentUnit.sprite, mouseX - unitAdjustedX, mouseY - unitAdjustedY, unitSize, unitSize);
-        ctx.beginPath();
-        ctx.arc(mouseX, mouseY - 48, currentUnit.range, 0, 2 * Math.PI);
-        ctx.lineWidth = 5;
-        ctx.stroke();
+        drawRange(currentUnit, mouseX, mouseY - 48);
     }
 }
 
+function detectRange(unit) {
+    unit.enemyQueue = [];
+
+    ctx.strokeStyle = 'red';
+    ctx.lineWidth = 5;
+    ctx.font = "16px Arial";
+    
+    enemies.forEach(enemy => {
+        let enemyCenterX = enemy.getAdjustedPosition().x;
+        let enemyCenterY = enemy.getAdjustedPosition().y;
+
+        let unitCenterX = unit.getAdjustedPosition().x;
+        let unitCenterY = unit.getAdjustedPosition().y;
+
+        let distance = Math.hypot(unitCenterX-enemyCenterX, unitCenterY-enemyCenterY)
+
+        if (distance <= unit.range + enemyAdjustedSize) {
+            unit.enemyQueue.push(enemy);
+            /*
+            ctx.beginPath();
+            ctx.moveTo(unitCenterX, unitCenterY);
+            ctx.lineTo(enemyCenterX, enemyCenterY);
+            ctx.stroke(); */
+
+            unit.attack(unit.enemyQueue[0]);
+        }
+    });
+}
+
 function drawUnits() {
-    units.forEach(obj => {
-        ctx.drawImage(obj.sprite, obj.x, obj.y, unitSize, unitSize);
+    units.forEach(unit => {
+        detectRange(unit);
+        ctx.drawImage(unit.sprite, unit.x, unit.y, unitSize, unitSize);
+        // drawStrokedText(unit.enemyQueue, unit.getAdjustedPosition().x, unit.y)
+        // drawRange(unit, unit.getAdjustedPosition().x, unit.getAdjustedPosition().y);
     });
 }
 
@@ -243,6 +301,11 @@ function spawnWave(amount, interval) {
 
         if (counter >= amount) clearInterval(wave);
     }, interval)
+}
+
+function start() { 
+    track["img"].src = track["sprite"];
+    requestAnimationFrame(draw);
 }
 
 addEventListener("keydown", (e) => {
