@@ -19,10 +19,11 @@ function updateBorders() {
 
 function buttonAnimation(id) {
     elem = document.getElementById(id)
-    elem.classList.remove("button-animation");
+    elem.classList.remove("button-animation"); 
     void elem.offsetWidth;
     elem.classList.add("button-animation");
-    currentUnit = new Unit("Shanks", 1050, 1, 250, 1000, "Sprites/Shanks01-outline-yellow.png");;
+    createUnit(id);
+    
     currentShopUnit = elem;
     updateBorders();
 }
@@ -45,6 +46,26 @@ const track = {
             ]
 }
 
+const waves = {
+    1: [
+        {enemy: "greedo", quantity: 3, interval: 400},
+        {enemy: "paul", quantity: 1, interval: 2000},
+    ],
+    2: [
+        {enemy: "greedo", quantity: 10, interval: 300},
+        {enemy: "paul", quantity: 2, interval: 2000},
+        {enemy: "troll", quantity: 1, interval: 4000},
+    ],
+    3: [],
+    4: [],
+    5: [],
+    6: [],
+    7: [],
+    8: [],
+    9: [],
+    10: []
+}
+
 const enemies = [];
 const units = [];
 
@@ -60,7 +81,9 @@ const speed = {
 
 const heartIcon = new Image();
 heartIcon.src = "Sprites/heart.png";
-health = 200;
+var health = 200;
+var money = 500;
+var wave = 0;
 
 var mouseX = 0;
 var mouseY = 0;
@@ -72,6 +95,8 @@ const unitAdjustedY = unitSize/1.3;
 
 const enemySize = 128;
 const enemyAdjustedSize = enemySize/2;
+
+// Classes ================================================================
 
 class Unit {
     constructor(name, cost, damage, range, attackSpeed, spriteSource, x, y) {
@@ -98,8 +123,6 @@ class Unit {
     }
 
     attack(target) {
-        console.log(this.canAttack())
-        console.log(this.lastAttack)
         if (this.canAttack()) {
             this.lastAttack = Date.now();
             target.health -= this.damage;
@@ -122,9 +145,41 @@ class Unit {
     }
 }
 
+class Jotaro extends Unit {
+    attack(target) {
+        if (this.canAttack()) {
+            let counter = 0;
+            let numberOfAttacks = 5;
+            let timeBetweenHits = 125;
+            let damagePerHit = this.damage;
+            this.lastAttack = Date.now();
+            
+            let attackRush = setInterval(function() {
+                target.health -= damagePerHit;
+                target.kill();
+                counter++;
+                if (counter >= numberOfAttacks) clearInterval(attackRush);
+            }, timeBetweenHits)
+        }
+    }
+}
+
+class Perona extends Unit {
+    attack(target) {
+        if (this.canAttack()) {
+            let damagePerHit = this.damage;
+            this.lastAttack = Date.now();
+            target.health -= damagePerHit;
+            target.speed /= 2;
+            target.kill();
+        }
+    }
+}
+
 class Enemy {
     constructor(name, health, speed, sprite, x, y) {
         this.name = name;
+        this.maxHealth = health;
         this.health = health;
         this.speed = speed;
         this.img = new Image();
@@ -147,11 +202,47 @@ class Enemy {
     }
 
     kill() {
-        if (this.health <= 0) enemies.splice(enemies.indexOf(this), 1);
+        if (this.health <= 0) {
+            money += this.maxHealth;
+            enemies.splice(enemies.indexOf(this), 1);
+        } 
     }
 }
 
 currentUnit = null;
+
+// Methods ================================================================
+
+function createUnit(id) {
+    switch (id) {
+        case "Shanks":
+            currentUnit = new Unit("Shanks", 1050, 1000, 250, 1800, "Sprites/Shanks01-outline-green.png");
+            break;
+        case "Perona":
+            currentUnit = new Perona("Perona", 530, 200, 500, 1100, "Sprites/Perona01-outline-green.png");
+            break;
+        case "Jotaro":
+            currentUnit = new Jotaro("Jotaro", 470, 5, 350, 1000, "Sprites/Jotaro01-outline-green.png");
+            break;
+    }
+}
+
+function createEnemy(id) {
+        switch (id) {
+            case ("takeoff"):
+                enemies.push(new Enemy("takeoff", 200, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
+                break;
+            case ("paul"):
+                enemies.push(new Enemy("paul", 150, speed.faster, "Sprites/paul.jpg", 0, 256));
+                break;
+            case ("greedo"):
+                enemies.push(new Enemy("greedo", 50, speed.normal, "Sprites/greedo.jpg", 0, 256));
+                break;
+            case ("troll"):
+                enemies.push(new Enemy("troll", 2000, speed.slow, "Sprites/trollface.jpg", 0, 256));
+                break; 
+    }
+}
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
@@ -162,6 +253,8 @@ function getMousePos(e) {
 function checkWin() {
     if (health <= 0) health = 200;
 }
+
+// Canvas ================================================================
 
 function drawRange(unit, x, y) {
     ctx.beginPath();
@@ -221,6 +314,18 @@ function drawHealth() {
     ctx.drawImage(heartIcon, 8, 0, 128, 128);
     ctx.font = "64px Arial";
     drawStrokedText(health, 200, 80);
+}
+
+function drawMoney() {
+    // ctx.drawImage(heartIcon, 8, 0, 128, 128);
+    ctx.font = "64px Arial";
+    drawStrokedText(money, 1436, 80);
+}
+
+function drawWave() {
+    // ctx.drawImage(heartIcon, 8, 0, 128, 128);
+    ctx.font = "64px Arial";
+    drawStrokedText(wave, 350, 80);
 }
 
 function drawStrokedText(text, x, y) {
@@ -286,48 +391,55 @@ function draw() {
     // Checkwin
     drawEnemies();
     drawHealth();
+    drawMoney();
+    drawWave();
 
     ctx.drawImage(track["img"], 0, 0);
     requestAnimationFrame(draw);
 }
 
-function spawnWave(amount, interval) {
-    let counter = 0;
-
-    let wave = setInterval(function() {
-        // TODO - REPLACE WITH WAVE CONST
-        enemies.push(new Enemy("takeoff", 4, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
-        counter++;
-
-        if (counter >= amount) clearInterval(wave);
-    }, interval)
-}
+// Gameloop ================================================================
 
 function start() { 
     track["img"].src = track["sprite"];
     requestAnimationFrame(draw);
 }
 
+function spawnWave(wave) {
+    
+    waves[wave].forEach(enemySet => {
+        let counter = 0;
+        let spawn = setInterval(function() {
+            console.table(enemies);
+           
+            createEnemy(enemySet.enemy);
+            counter++;
+
+            if (counter >= enemySet.quantity) clearInterval(spawn);
+
+        }, enemySet.interval);
+    })
+}
+
 addEventListener("keydown", (e) => {
     switch (e.key) {
         case ("r"):
-            enemies.push(new Enemy("takeoff", 20, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
+            createEnemy("takeoff");
             break;
         case ("e"):
-            enemies.push(new Enemy("paul", 15, speed.faster, "Sprites/paul.jpg", 0, 256));
+            createEnemy("paul");
             break;
         case ("w"):
-            enemies.push(new Enemy("greedo", 5, speed.normal, "Sprites/greedo.jpg", 0, 256));
+            createEnemy("greedo");
             break;
         case ("q"):
-            enemies.push(new Enemy("troll", 200, speed.slow, "Sprites/trollface.jpg", 0, 256));
+            createEnemy("troll");
             break;
-        case ("m"):
-            console.clear();
-            console.table(enemies);
-            break;    
         case ("t"):
-            spawnWave(50 , 100);
+            spawnWave(++wave);
+            break;   
+        case ("m"):
+            money += 10000;
             break;  
         case ("Escape"):
             currentUnit = null;
@@ -340,11 +452,9 @@ addEventListener("keydown", (e) => {
 addEventListener("mousemove", (e) => {getMousePos(e)});
 
 canvas.addEventListener("mousedown", () => {
-    if (!(currentUnit === null))
+    if (!(currentUnit === null) && money >= currentUnit.cost)
     {
-        console.log(`placed ${currentUnit.name}`);
-        console.log(currentUnit);
-        console.table(units);
+        money -= currentUnit.cost;
         currentUnit.place(mouseX, mouseY);
 
         currentUnit = null;
