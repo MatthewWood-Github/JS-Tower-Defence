@@ -1,6 +1,6 @@
 // SHOP ===============================================
 
-var currentUnit = null;
+var currentShopUnit = null;
 var shopOptions = [];
 
 function populateOptions() {
@@ -8,13 +8,13 @@ function populateOptions() {
 }
 
 function updateBorders() {
-    if (currentUnit === null) return;
-
     for (elem of shopOptions) {
         elem.style.borderColor = "black";
     }
 
-    currentUnit.style.borderColor = "yellow";
+    if (currentShopUnit === null) return;
+
+    currentShopUnit.style.borderColor = "yellow";
 }
 
 function buttonAnimation(id) {
@@ -22,12 +22,8 @@ function buttonAnimation(id) {
     elem.classList.remove("button-animation");
     void elem.offsetWidth;
     elem.classList.add("button-animation");
-    currentUnit = elem;
-    updateBorders();
-}
-
-function placeUnit() {
-    currentUnit = null;
+    currentUnit = new Unit("Shanks", 1050, 1, 250, 1, "Sprites/Shanks01-outline-yellow.png");;
+    currentShopUnit = elem;
     updateBorders();
 }
 
@@ -35,25 +31,6 @@ function placeUnit() {
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
-
-var mouseX = 0;
-var mouseY = 0;
-
-const heartIcon = new Image();
-heartIcon.src = "Sprites/heart.png";
-health = 200;
-
-const enemies = [];
-
-const speed = {
-    slow: 1,
-    normal: 2,
-    fast: 4,
-    faster: 8,
-    superfast: 16,
-    insane: 32,
-    godspeed: 64,
-}
 
 const track = {
     img: new Image(),
@@ -67,6 +44,89 @@ const track = {
             {x: 1152, y: 1024} // Terminal
             ],
 }
+
+const enemies = [];
+const units = [];
+
+const speed = {
+    slow: 1,
+    normal: 2,
+    fast: 4,
+    faster: 8,
+    superfast: 16,
+    insane: 32,
+    godspeed: 64,
+}
+
+const heartIcon = new Image();
+heartIcon.src = "Sprites/heart.png";
+health = 200;
+
+var mouseX = 0;
+var mouseY = 0;
+
+const unitSize = 192;
+const placeAtFeetRatio = 1.3;
+const unitAdjustedX = unitSize/2;
+const unitAdjustedY = unitSize/1.3;
+
+class Unit {
+    constructor(name, cost, damage, range, attackSpeed, spriteSource, x, y) {
+        this.name = name;
+        this.cost = cost;
+        this.damage = damage;
+        this.range = range;
+        this.attackSpeed = attackSpeed;
+        this.sprite = new Image();
+        this.sprite.src = spriteSource;
+        this.sprite.zIndex = 2;
+
+        this.enemyQueue = [];
+    }
+
+    place(x, y) {
+        this.x = x - unitAdjustedX;
+        this.y = y - unitAdjustedY;
+        currentShopUnit = null;
+        updateBorders();
+        units.unshift(this);
+    }
+
+    attack(target) {
+        target.health -= this.damage;
+    }
+
+    ability() {
+        return;
+    }
+
+    queueListener() {
+        
+    }
+}
+
+class Enemy {
+    constructor(name, health, speed, sprite, x, y) {
+        this.name = name;
+        this.health = health;
+        this.speed = speed;
+        this.img = new Image();
+        this.img.src = sprite;
+        this.x = x;
+        this.y = y;
+        this.progress = 0;
+    }
+
+    moveHorizontal(magnitude) {
+        this.x += magnitude;
+    }
+
+    moveVertical(magnitude) {
+        this.y += magnitude;
+    }
+}
+
+currentUnit = new Unit("Shanks", 1050, 1, 250, 1, "Sprites/Shanks01-outline-yellow.png");
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
@@ -83,12 +143,45 @@ function checkWin() {
     if (health <= 0) {console.log("Lost"); health = 200;}
 }
 
-function draw() {
-    ctx.globalCompositeOperation = "destination-over";
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+function drawCurrentUnit() {
+    if (!(currentUnit === null)) {
+        ctx.drawImage(currentUnit.sprite, mouseX - unitAdjustedX, mouseY - unitAdjustedY, unitSize, unitSize);
+        ctx.beginPath();
+        ctx.arc(mouseX, mouseY - 48, currentUnit.range, 0, 2 * Math.PI);
+        ctx.lineWidth = 5;
+        ctx.stroke();
+    }
+}
 
-    // Calculate enemy position and direction
+function drawUnits() {
+    units.forEach(obj => {
+        ctx.drawImage(obj.sprite, obj.x, obj.y, unitSize, unitSize);
+    });
+}
+
+function drawHealth() {
+    ctx.drawImage(heartIcon, 8, 0, 128, 128);
+    ctx.font = "64px Arial";
+    drawStrokedText(health, 200, 80);
+}
+
+function drawStrokedText(text, x, y) {
+    ctx.lineWidth = 8;
+    ctx.fillStyle = "white";
+    ctx.fillText(text, x, y);
+    ctx.strokeStyle = 'black';
+    ctx.strokeText(text, x, y);
+    
+}
+
+// Checkwin
+function drawEnemies() {
+    ctx.font = "32px Arial";
     enemies.forEach(obj => {
+        // Replace with health bar
+        drawStrokedText(obj.health, obj.x + 64, obj.y - 32);
+
+        // Sprite
         ctx.drawImage(obj.img, obj.x, obj.y, 128, 128);
 
         // Kill object at end
@@ -120,43 +213,36 @@ function draw() {
 
             if (obj.y == nextWaypoint.y) obj.progress++;
         }
-
-        ctx.beginPath();
-        ctx.arc(mouseX, mouseY, 50, 0, 2 * Math.PI);
-        ctx.stroke();
     });
+}
+
+function draw() {
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.textAlign = "center";
+    
+
+    drawCurrentUnit();
+    drawUnits();
+
+    // Checkwin
+    drawEnemies();
+    drawHealth();
 
     ctx.drawImage(track["img"], 0, 0);
-    ctx.drawImage(heartIcon, 8, 0, 128, 128);
-    ctx.font = "64px Arial";
-    ctx.fillStyle = "white";
-    ctx.textAlign = "center";
-    ctx.fillText(`${health}`, 200, 80);
-
-    ctx.arc(mouseX, mouseY, 50, 0, 2 * Math.PI);
-
     requestAnimationFrame(draw);
 }
 
-class Enemy {
-    constructor(name, health, speed, sprite, x, y) {
-        this.name = name;
-        this.health = health;
-        this.speed = speed;
-        this.img = new Image();
-        this.img.src = sprite;
-        this.x = x;
-        this.y = y;
-        this.progress = 0;
-    }
+function spawnWave(amount, interval) {
+    let counter = 0;
 
-    moveHorizontal(magnitude) {
-        this.x += magnitude;
-    }
+    let wave = setInterval(function() {
+        // TODO - REPLACE WITH WAVE CONST
+        enemies.push(new Enemy("takeoff", 4, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
+        counter++;
 
-    moveVertical(magnitude) {
-        this.y += magnitude;
-    }
+        if (counter >= amount) clearInterval(wave);
+    }, interval)
 }
 
 addEventListener("keydown", (e) => {
@@ -179,24 +265,29 @@ addEventListener("keydown", (e) => {
             break;    
         case ("t"):
             spawnWave(50 , 100);
-            break;          
+            break;  
+        case ("Escape"):
+            currentUnit = null;
+            currentShopUnit = null;
+            updateBorders();
+            break;
     }
 });
 
-function spawnWave(amount, interval) {
-    let counter = 0;
-
-    let wave = setInterval(function() {
-        // TODO - REPLACE WITH WAVE CONST
-        enemies.push(new Enemy("takeoff", 4, speed.superfast, "Sprites/takeoff.jpg", 0, 256)); 
-        counter++;
-
-        if (counter >= amount) clearInterval(wave);
-    }, interval)
-}
-
-document.getElementById("game").onclick = placeUnit;
 addEventListener("mousemove", (e) => {getMousePos(e)});
+
+canvas.addEventListener("mousedown", () => {
+    if (!(currentUnit === null))
+    {
+        console.log(`placed ${currentUnit.name}`);
+        console.log(currentUnit);
+        console.table(units);
+        currentUnit.place(mouseX, mouseY);
+
+        currentUnit = null;
+        currentShopUnit = null;
+    }
+});
 
 populateOptions();
 start();

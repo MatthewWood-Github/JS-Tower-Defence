@@ -82,32 +82,3 @@ ul {
     from {filter: brightness(0.5);}
     to {filter: brightness(1);}
 }
-
-.canvas-image {
-    position: absolute;
-    width: 128px; 
-    height: 128px;
-}
-
-.canvas-unit {
-    position: absolute;
-    width: 192px;
-    height: 192px;
-    z-index: 2;
-    border: 2px solid black;
-}
-
-.canvas-enemy {
-    position: absolute;
-    width: 100px;
-    height: 100px;
-    z-index: 2;
-    border: 2px solid black;
-}
-
-.can-place {
-    position: absolute;
-    background-color: rgba(172, 255, 47, 0.582);
-    z-index: 3;
-}
-
