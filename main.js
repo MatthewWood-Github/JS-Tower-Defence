@@ -52,7 +52,7 @@ const speed = {
     faster: 8,
     superfast: 16,
     insane: 32,
-    godspeed: 64
+    godspeed: 64,
 }
 
 const track = {
@@ -70,10 +70,8 @@ const track = {
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
-    return {
-        x: (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
-        y: (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
-    };
+    mouseX = (e.clientX - rect.left) / (rect.right - rect.left) * canvas.width,
+    mouseY = (e.clientY - rect.top) / (rect.bottom - rect.top) * canvas.height
 }
 
 function start() { 
@@ -122,6 +120,10 @@ function draw() {
 
             if (obj.y == nextWaypoint.y) obj.progress++;
         }
+
+        ctx.beginPath();
+        ctx.arc(mouseX, mouseY, 50, 0, 2 * Math.PI);
+        ctx.stroke();
     });
 
     ctx.drawImage(track["img"], 0, 0);
@@ -130,6 +132,8 @@ function draw() {
     ctx.fillStyle = "white";
     ctx.textAlign = "center";
     ctx.fillText(`${health}`, 200, 80);
+
+    ctx.arc(mouseX, mouseY, 50, 0, 2 * Math.PI);
 
     requestAnimationFrame(draw);
 }
