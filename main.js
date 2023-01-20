@@ -5,6 +5,9 @@ var shopOptions = [];
 
 function populateOptions() {
     shopOptions = document.getElementById("shop-options").children;
+    for (elem of shopOptions) {
+        elem.innerHTML = `£${possibleUnits[elem.id].cost}`;
+    }
 }
 
 function updateBorders() {
@@ -49,27 +52,41 @@ const track = {
 const waves = {
     1: [
         {enemy: "greedo", quantity: 3, interval: 400},
-        {enemy: "paul", quantity: 1, interval: 2000},
     ],
     2: [
-        {enemy: "greedo", quantity: 10, interval: 300},
-        {enemy: "paul", quantity: 2, interval: 2000},
-        {enemy: "troll", quantity: 1, interval: 4000},
+        {enemy: "greedo", quantity: 6, interval: 300},
     ],
-    3: [],
+    3: [
+        {enemy: "greedo", quantity: 6, interval: 300},
+        {enemy: "troll", quantity: 1, interval: 1000},
+        {enemy: "greedo", quantity: 2, interval: 2000},
+        {enemy: "greedo", quantity: 6, interval: 300},
+        {enemy: "jake", quantity: 1, interval: 3000},
+    ],
     4: [],
     5: [],
     6: [],
-    7: [],
+    7: [
+        {enemy: "troll", quantity: 1, interval: 1000},
+        {enemy: "greedo", quantity: 6, interval: 300},
+        {enemy: "jake", quantity: 1, interval: 3000},
+    ],
     8: [],
     9: [],
-    10: []
+    10: [
+        {enemy: "troll", quantity: 6, interval: 500},
+        {enemy: "greedo", quantity: 6, interval: 300},
+        {enemy: "takeoff", quantity: 3, interval: 500},
+        {enemy: "greedo", quantity: 6, interval: 300},
+        {enemy: "takeoff", quantity: 3, interval: 500},
+    ]
 }
 
 const enemies = [];
 const units = [];
 
 const speed = {
+    boss: 0.5,
     slow: 1,
     normal: 2,
     fast: 4,
@@ -99,14 +116,14 @@ const enemyAdjustedSize = enemySize/2;
 // Classes ================================================================
 
 class Unit {
-    constructor(name, cost, damage, range, attackSpeed, spriteSource, x, y) {
+    constructor(name) {
         this.name = name;
-        this.cost = cost;
-        this.damage = damage;
-        this.range = range;
-        this.attackSpeed = attackSpeed;
+        this.cost = possibleUnits[name].cost;
+        this.damage = possibleUnits[name].damage;
+        this.range = possibleUnits[name].range;
+        this.attackSpeed = possibleUnits[name].attackSpeed;
         this.sprite = new Image();
-        this.sprite.src = spriteSource;
+        this.sprite.src = possibleUnits[name].spriteSource;
         this.sprite.zIndex = 2;
 
         this.lastAttack = 0;
@@ -126,7 +143,8 @@ class Unit {
         if (this.canAttack()) {
             this.lastAttack = Date.now();
             target.health -= this.damage;
-            target.kill();
+            
+            if (!(target === null)) target.kill();
         }
     }
 
@@ -156,7 +174,7 @@ class Jotaro extends Unit {
             
             let attackRush = setInterval(function() {
                 target.health -= damagePerHit;
-                target.kill();
+                if (!(target === null)) target.kill();
                 counter++;
                 if (counter >= numberOfAttacks) clearInterval(attackRush);
             }, timeBetweenHits)
@@ -170,22 +188,25 @@ class Perona extends Unit {
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
             target.health -= damagePerHit;
-            target.speed /= 2;
-            target.kill();
+            target.slow(0.5, 5000)
+            if (!(target === null)) target.kill();
         }
     }
 }
 
 class Enemy {
-    constructor(name, health, speed, sprite, x, y) {
+    constructor(name) {
         this.name = name;
-        this.maxHealth = health;
-        this.health = health;
-        this.speed = speed;
+        this.maxHealth = possibleEnemies[name].health;
+        this.health = possibleEnemies[name].health;
+        this.maxSpeed = possibleEnemies[name].speed;
+        this.speed = possibleEnemies[name].speed;
+        this.slowed = false;
         this.img = new Image();
-        this.img.src = sprite;
-        this.x = x;
-        this.y = y;
+        this.img.src = possibleEnemies[name].sprite;
+        this.x = possibleEnemies[name].x;
+        this.y = possibleEnemies[name].y;
+        this.value = possibleEnemies[name].value;
         this.progress = 0;
     }
 
@@ -203,46 +224,130 @@ class Enemy {
 
     kill() {
         if (this.health <= 0) {
-            money += this.maxHealth;
-            enemies.splice(enemies.indexOf(this), 1);
+            money += this.value;
+            if (enemies[enemies.indexOf(this)] === this) {
+                enemies.splice(enemies.indexOf(this), 1);
+            }
         } 
+    }
+
+    slow(magnitude, duration)
+    {
+        if (this.slowed == false) {
+            this.speed *= magnitude;
+            this.slowed = true;
+            setTimeout(() => {this.speed = this.maxSpeed; this.slowed = false;}, duration);
+        }
     }
 }
 
 currentUnit = null;
 
-// Methods ================================================================
+possibleUnits = {
+    Shanks: {
+        name: "Shanks",
+        cost: 1050,
+        damage: 200,
+        range: 250,
+        attackSpeed: 1800,
+        spriteSource: "Sprites/Shanks01-outline-green.png"
+    },
+
+    Perona: {
+        name: "Perona",
+        cost: 530,
+        damage: 30,
+        range: 550,
+        attackSpeed: 1100,
+        spriteSource: "Sprites/Perona01-outline-green.png"
+    },
+
+    Jotaro: {
+        name: "Jotaro",
+        cost: 300,
+        damage: 5,
+        range: 350,
+        attackSpeed: 2000,
+        spriteSource: "Sprites/Jotaro01-outline-green.png"
+    }
+}
 
 function createUnit(id) {
     switch (id) {
         case "Shanks":
-            currentUnit = new Unit("Shanks", 1050, 1000, 250, 1800, "Sprites/Shanks01-outline-green.png");
+            currentUnit = new Unit("Shanks");
             break;
         case "Perona":
-            currentUnit = new Perona("Perona", 530, 200, 500, 1100, "Sprites/Perona01-outline-green.png");
+            currentUnit = new Perona("Perona");
             break;
         case "Jotaro":
-            currentUnit = new Jotaro("Jotaro", 470, 5, 350, 1000, "Sprites/Jotaro01-outline-green.png");
+            currentUnit = new Jotaro("Jotaro");
             break;
+    }
+}
+
+const startPos = {x: 0, y: 256};
+
+const possibleEnemies = {
+    Takeoff: {
+        name: "Takeoff",
+        health: 200,
+        speed: speed.faster,
+        sprite: "Sprites/takeoff.jpg",
+        x: startPos.x,
+        y: startPos.y,
+        value: 250
+    },
+
+    Paul: {
+        name: "Paul",
+        health: 150,
+        speed: speed.fast,
+        sprite: "Sprites/paul.jpg",
+        x: startPos.x,
+        y: startPos.y,
+        value: 100
+    },
+
+    Greedo: {
+        name: "Greedo",
+        health: 50,
+        speed: speed.slow,
+        sprite: "Sprites/greedo.jpg",
+        x: startPos.x,
+        y: startPos.y,
+        value: 100
+    },
+
+    Troll: {
+        name: "Troll",
+        health: 2000,
+        speed: speed.boss,
+        sprite: "Sprites/trollface.jpg",
+        x: startPos.x,
+        y: startPos.y,
+        value: 1000
     }
 }
 
 function createEnemy(id) {
         switch (id) {
             case ("takeoff"):
-                enemies.push(new Enemy("takeoff", 200, speed.superfast, "Sprites/takeoff.jpg", 0, 256));
+                enemies.push(new Enemy("Takeoff"));
                 break;
             case ("paul"):
-                enemies.push(new Enemy("paul", 150, speed.faster, "Sprites/paul.jpg", 0, 256));
+                enemies.push(new Enemy("Paul"));
                 break;
             case ("greedo"):
-                enemies.push(new Enemy("greedo", 50, speed.normal, "Sprites/greedo.jpg", 0, 256));
+                enemies.push(new Enemy("Greedo"));
                 break;
             case ("troll"):
-                enemies.push(new Enemy("troll", 2000, speed.slow, "Sprites/trollface.jpg", 0, 256));
+                enemies.push(new Enemy("Troll"));
                 break; 
     }
 }
+
+// Methods ================================================================
 
 function getMousePos(e) {
     var rect = canvas.getBoundingClientRect();
@@ -290,11 +395,11 @@ function detectRange(unit) {
 
         if (distance <= unit.range + enemyAdjustedSize) {
             unit.enemyQueue.push(enemy);
-            /*
+            
             ctx.beginPath();
             ctx.moveTo(unitCenterX, unitCenterY);
-            ctx.lineTo(enemyCenterX, enemyCenterY);
-            ctx.stroke(); */
+            ctx.lineTo(unit.enemyQueue[0].x, unit.enemyQueue[0].y);
+            ctx.stroke(); 
 
             unit.attack(unit.enemyQueue[0]);
         }
@@ -384,11 +489,8 @@ function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     ctx.textAlign = "center";
     
-
     drawCurrentUnit();
     drawUnits();
-
-    // Checkwin
     drawEnemies();
     drawHealth();
     drawMoney();
@@ -406,7 +508,6 @@ function start() {
 }
 
 function spawnWave(wave) {
-    
     waves[wave].forEach(enemySet => {
         let counter = 0;
         let spawn = setInterval(function() {
@@ -451,7 +552,7 @@ addEventListener("keydown", (e) => {
 
 addEventListener("mousemove", (e) => {getMousePos(e)});
 
-canvas.addEventListener("mousedown", () => {
+function placeUnit() {
     if (!(currentUnit === null) && money >= currentUnit.cost)
     {
         money -= currentUnit.cost;
@@ -460,6 +561,10 @@ canvas.addEventListener("mousedown", () => {
         currentUnit = null;
         currentShopUnit = null;
     }
+}
+
+canvas.addEventListener("mousedown", () => {
+    placeUnit();
 });
 
 populateOptions();
