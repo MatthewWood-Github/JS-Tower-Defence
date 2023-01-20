@@ -86,7 +86,7 @@ const enemies = [];
 const units = [];
 
 const speed = {
-    boss: 0.5,
+    boss: 1,
     slow: 1,
     normal: 2,
     fast: 4,
@@ -105,6 +105,8 @@ var wave = 0;
 var mouseX = 0;
 var mouseY = 0;
 
+var debug = true;
+
 const unitSize = 192;
 const placeAtFeetRatio = 1.3;
 const unitAdjustedX = unitSize/2;
@@ -112,6 +114,7 @@ const unitAdjustedY = unitSize/1.3;
 
 const enemySize = 128;
 const enemyAdjustedSize = enemySize/2;
+const enemyCollisionForgiveness = 20;
 
 // Classes ================================================================
 
@@ -140,6 +143,7 @@ class Unit {
     }
 
     attack(target) {
+        if (target === undefined) return;
         if (this.canAttack()) {
             this.lastAttack = Date.now();
             target.health -= this.damage;
@@ -161,10 +165,26 @@ class Unit {
     getAdjustedPosition() {
         return {x: this.x + unitAdjustedX, y: this.y + unitAdjustedX}
     }
+
+    getSortedEnemyQueue() {
+        if (this.enemyQueue.length > 1) {
+            let output = this.enemyQueue;
+            output = output.sort((a, b)=> {
+                if (a.progress === b.progress){
+                  return a.getDistanceToNext() < b.getDistanceToNext() ? -1 : 1
+                } else {
+                  return a.progress > b.progress ? -1 : 1
+                }
+              });
+            return output;
+        }
+        return this.enemyQueue;
+    }
 }
 
 class Jotaro extends Unit {
     attack(target) {
+        if (target === undefined) return;
         if (this.canAttack()) {
             let counter = 0;
             let numberOfAttacks = 5;
@@ -184,6 +204,7 @@ class Jotaro extends Unit {
 
 class Perona extends Unit {
     attack(target) {
+        if (target === undefined) return;
         if (this.canAttack()) {
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
@@ -220,6 +241,17 @@ class Enemy {
 
     getAdjustedPosition() {
         return {x: this.x + enemyAdjustedSize, y: this.y + enemyAdjustedSize};
+    }
+
+    getDistanceToNext() {
+        let nextWaypoint = 0;
+        if (this.progress == track["nodes"].length-1) {
+            nextWaypoint = track["nodes"][this.progress];
+        }
+        else nextWaypoint = track["nodes"][this.progress+1];
+
+        let distance = Math.hypot(nextWaypoint.x-this.x, nextWaypoint.y-this.y)
+        return distance;
     }
 
     kill() {
@@ -383,27 +415,32 @@ function detectRange(unit) {
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 5;
     ctx.font = "16px Arial";
+
+    let unitCenterX = unit.getAdjustedPosition().x;
+    let unitCenterY = unit.getAdjustedPosition().y;
     
     enemies.forEach(enemy => {
         let enemyCenterX = enemy.getAdjustedPosition().x;
         let enemyCenterY = enemy.getAdjustedPosition().y;
 
-        let unitCenterX = unit.getAdjustedPosition().x;
-        let unitCenterY = unit.getAdjustedPosition().y;
-
         let distance = Math.hypot(unitCenterX-enemyCenterX, unitCenterY-enemyCenterY)
 
         if (distance <= unit.range + enemyAdjustedSize) {
-            unit.enemyQueue.push(enemy);
-            
-            ctx.beginPath();
-            ctx.moveTo(unitCenterX, unitCenterY);
-            ctx.lineTo(unit.enemyQueue[0].x, unit.enemyQueue[0].y);
-            ctx.stroke(); 
-
-            unit.attack(unit.enemyQueue[0]);
+            if (!(unit.enemyQueue.includes(enemy))) unit.enemyQueue.push(enemy);
         }
     });
+
+    let sorted = unit.getSortedEnemyQueue()[0];
+    if (unit.getSortedEnemyQueue().length > 0 && debug === true) {
+        ctx.beginPath();
+        ctx.moveTo(unitCenterX, unitCenterY);
+        ctx.lineTo(sorted.x + enemyAdjustedSize, sorted.y + enemyAdjustedSize);
+        ctx.stroke(); 
+    };
+
+    console.log(sorted);
+
+    unit.attack(sorted);
 }
 
 function drawUnits() {
@@ -424,13 +461,13 @@ function drawHealth() {
 function drawMoney() {
     // ctx.drawImage(heartIcon, 8, 0, 128, 128);
     ctx.font = "64px Arial";
-    drawStrokedText(money, 1436, 80);
+    drawStrokedText(`£${money}`, 1336, 80);
 }
 
 function drawWave() {
     // ctx.drawImage(heartIcon, 8, 0, 128, 128);
     ctx.font = "64px Arial";
-    drawStrokedText(wave, 350, 80);
+    drawStrokedText(`Wave: ${wave}`, 450, 80);
 }
 
 function drawStrokedText(text, x, y) {
@@ -447,7 +484,9 @@ function drawEnemies() {
     ctx.font = "32px Arial";
     enemies.forEach(obj => {
         // Replace with health bar
-        drawStrokedText(obj.health, obj.x + 64, obj.y - 32);
+        if (debug === true) drawStrokedText(`${obj.health} ${obj.progress} ${Math.round(obj.getDistanceToNext())}`, obj.x + 64, obj.y - 32);
+        else drawStrokedText(`${obj.health}`, obj.x + 64, obj.y - 32);
+        
 
         // Sprite
         ctx.drawImage(obj.img, obj.x, obj.y, 128, 128);
@@ -471,7 +510,7 @@ function drawEnemies() {
             let magnitude = obj.speed * Math.sign(differenceX);
             obj.moveHorizontal(magnitude);
 
-            if (obj.x == nextWaypoint.x) obj.progress++;
+            if ((obj.x >= nextWaypoint.x && differenceX >= 0) || (obj.x <= nextWaypoint.x && differenceX <= 0)) obj.progress++;
         }
 
         // If moving vertical
@@ -479,7 +518,7 @@ function drawEnemies() {
             let magnitude = obj.speed * Math.sign(differenceY)
             obj.moveVertical(magnitude);
 
-            if (obj.y == nextWaypoint.y) obj.progress++;
+            if (obj.y >= nextWaypoint.y && differenceY >= 0 || obj.y <= nextWaypoint.y && differenceY <= 0) obj.progress++;
         }
     });
 }
