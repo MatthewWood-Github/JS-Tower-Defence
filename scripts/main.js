@@ -757,7 +757,7 @@ function showUnitUpgrade(unit) {
     elem.classList.add("upgrade-menu");
     elem.style.left = `${unit.x}px`;
     elem.style.top = `${unit.y}px`;
-    elem.onclick = () => {elem.style.zIndex = ++highestZIndex};
+    elem.onmouseenter = () => {elem.style.zIndex = ++highestZIndex};
 
     let targetingButton = document.createElement("button");
     targetingButton.style.width = "2fr";
@@ -800,6 +800,25 @@ function showUnitUpgrade(unit) {
     upgradeButton.style.width = "1fr";
     upgradeButton.style.backgroundImage = "url('Sprites/upgrade-icon.png')";
     upgradeButton.style.backgroundSize = "cover";
+    upgradeButton.style.color = "white";
+    upgradeButton.style.fontSize = "20px";
+    let upgrades = possibleUnits[unit.name].upgrades;
+    var costMenu = document.createElement("div");
+
+    upgradeButton.onmouseenter = () => {
+        costMenu.classList.add("show-cost");
+        costMenu.style.left = `${unit.x + 175}px`;
+        costMenu.style.top = `${unit.y - 45}px`;
+        if (unit.level >= Object.keys(possibleUnits[unit.name].upgrades).length) costMenu.innerHTML = "Max";
+        else costMenu.innerHTML = `£${upgrades[unit.level+1].cost}`;
+
+        document.getElementById("main").appendChild(costMenu)
+    };
+
+    upgradeButton.onmouseleave = () => {
+        document.getElementById("main").removeChild(costMenu);
+    };
+
     elem.style.zIndex = ++highestZIndex;
     upgradeButton.onclick = () => {
         if (unit.level >= Object.keys(possibleUnits[unit.name].upgrades).length) return;
@@ -808,6 +827,7 @@ function showUnitUpgrade(unit) {
             unit.upgrade()
             money -= possibleUnits[unit.name].upgrades[unit.level].cost;
             showUnitUpgrade(unit);
+            document.getElementById("main").removeChild(costMenu);
             document.getElementById("main").removeChild(elem);
         };
     };
