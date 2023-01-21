@@ -255,7 +255,9 @@ class Unit {
         this.sprite.zIndex = 2;
         this.level = 0;
 
-        this.targeting = "First";
+        this.targetingOptions = ["First", "Last", "Strong", "Weak", "Close", "Far"];
+        this.targetingIndex = 0;
+        this.targeting = this.targetingOptions[this.targetingIndex];
         this.lastAttack = 0;
 
         this.enemyQueue = [];
@@ -267,6 +269,7 @@ class Unit {
         currentShopUnit = null;
         updateBorders();
         units.unshift(this);
+        showUnitUpgrade(this);
     }
 
     attack(target) {
@@ -298,7 +301,7 @@ class Unit {
             case "First":
             if (this.enemyQueue.length > 1) {
                 let output = this.enemyQueue;
-                output = output.sort((a, b)=> {
+                output = output.sort((a, b) => {
                     if (a.progress === b.progress){
                         return a.getDistanceToNext() < b.getDistanceToNext() ? -1 : 1
                     } 
@@ -313,7 +316,7 @@ class Unit {
             case "Last":
             if (this.enemyQueue.length > 1) {
                 let output = this.enemyQueue;
-                output = output.sort((a, b)=> {
+                output = output.sort((a, b) => {
                     if (a.progress === b.progress){
                         return a.getDistanceToNext() > b.getDistanceToNext() ? -1 : 1
                     } 
@@ -324,16 +327,58 @@ class Unit {
                 return output;
             }
             break;
+
+            case "Strong":
+                if (this.enemyQueue.length > 1) {
+                    let output = this.enemyQueue;
+                    output = output.sort((a, b) => (a.health < b.health) ? 1 : -1);
+                    return output;
+                };
+            break;
+
+            case "Weak":
+                if (this.enemyQueue.length > 1) {
+                    let output = this.enemyQueue;
+                    output = output.sort((a, b) => (a.health > b.health) ? 1 : -1);
+                    return output;
+                };
+            break;
+
+            case "Close":
+                if (this.enemyQueue.length > 1) {
+                    let output = this.enemyQueue;
+                    output = output.sort((a, b) => (a.getDistanceToUnit(this) > b.getDistanceToUnit(this)) ? 1 : -1);
+                    return output;
+                };
+            break;
+
+            case "Far":
+                if (this.enemyQueue.length > 1) {
+                    let output = this.enemyQueue;
+                    output = output.sort((a, b) => (a.getDistanceToUnit(this) < b.getDistanceToUnit(this)) ? 1 : -1);
+                    return output;
+                };
+            break;
+
         }
         return this.enemyQueue;
     }
 
+    cycleTargeting() {
+        if (this.targetingIndex == this.targetingOptions.length-1) {
+            this.targetingIndex = 0;
+            this.targeting = this.targetingOptions[this.targetingIndex];
+        }
+        else {
+            this.targeting = this.targetingOptions[++this.targetingIndex];
+        };
+    }
+
     upgrade() {
-        let upgradeTier = possibleUnits[this.name].upgrades[this.level];
+        let upgradeTier = possibleUnits[this.name].upgrades[++this.level];
         this.damage += upgradeTier.damage;
         this.range += upgradeTier.range;
         this.attackSpeed -= upgradeTier.attackSpeed;
-        this.level++;
     }
 }
 
@@ -441,6 +486,10 @@ class Enemy {
         let upgradeTier = possibleEnemies[this.name].upgrades;
         this.health = Math.round(this.health + (upgradeTier.health * (wave-1)));
         this.value += upgradeTier.value * (wave-1);
+    }
+
+    getDistanceToUnit(unit) {
+        return Math.hypot(unit.x-this.x, unit.y-this.y)
     }
 }
 
@@ -693,7 +742,6 @@ function placeUnit() {
 
     if (money >= currentUnit.cost && getNumberOfUnits(currentUnit) < possibleUnits[currentUnit.name].maxNumber)
     {
-        
         money -= currentUnit.cost;
         currentUnit.place(mouseX, mouseY);
 
@@ -702,11 +750,70 @@ function placeUnit() {
     }
 }
 
+var highestZIndex = 20;
+
 function showUnitUpgrade(unit) {
-    elem = document.createElement("div");
+    let elem = document.createElement("div");
     elem.classList.add("upgrade-menu");
     elem.style.left = `${unit.x}px`;
     elem.style.top = `${unit.y}px`;
+    elem.onclick = () => {elem.style.zIndex = ++highestZIndex};
+
+    let targetingButton = document.createElement("button");
+    targetingButton.style.width = "2fr";
+    targetingButton.style.backgroundColor = "#2d2d2d";
+    targetingButton.style.color = "white";
+    targetingButton.style.fontSize = "20px";
+    targetingButton.innerHTML = unit.targeting;
+    targetingButton.onclick = () => {
+        unit.cycleTargeting();
+        showUnitUpgrade(unit);
+        document.getElementById("main").removeChild(elem);
+    }
+    elem.appendChild(targetingButton);
+
+    let unitAttack = document.createElement("div");
+    unitAttack.style.backgroundImage = "url('Sprites/damage-icon.png')";
+    unitAttack.style.backgroundSize = "cover";
+
+    unitAttack.style.width = "1fr";
+    unitAttack.innerHTML = unit.damage;
+    elem.appendChild(unitAttack);
+
+    let unitAttackSpeed = document.createElement("div");
+    unitAttackSpeed.style.backgroundImage = "url('Sprites/attack-speed.png')";
+    unitAttackSpeed.style.backgroundSize = "cover";
+
+    unitAttackSpeed.style.width = "1fr";
+    unitAttackSpeed.innerHTML = unit.attackSpeed/1000;
+    elem.appendChild(unitAttackSpeed);
+
+    let unitRange = document.createElement("div");
+    unitRange.style.backgroundImage = "url('Sprites/attack-range.png')";
+    unitRange.style.backgroundSize = "cover";
+
+    unitRange.style.width = "1fr";
+    unitRange.innerHTML = unit.range;
+    elem.appendChild(unitRange);
+
+    let upgradeButton = document.createElement("button");
+    upgradeButton.style.width = "1fr";
+    upgradeButton.style.backgroundImage = "url('Sprites/upgrade-icon.png')";
+    upgradeButton.style.backgroundSize = "cover";
+    elem.style.zIndex = ++highestZIndex;
+    upgradeButton.onclick = () => {
+        if (unit.level >= Object.keys(possibleUnits[unit.name].upgrades).length) return;
+        
+        if (money >= possibleUnits[unit.name].upgrades[unit.level+1].cost) {
+            unit.upgrade()
+            money -= possibleUnits[unit.name].upgrades[unit.level].cost;
+            showUnitUpgrade(unit);
+            document.getElementById("main").removeChild(elem);
+        };
+    };
+
+    elem.appendChild(upgradeButton);
+
     document.getElementById("main").appendChild(elem);
 }
 

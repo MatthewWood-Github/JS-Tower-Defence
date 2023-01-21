@@ -88,11 +88,17 @@ ul {
 }
 
 .upgrade-menu {
-    width: 200px;
-    height: 30px;
+    width: 240px;
+    height: 40px;
     position: absolute;
     background-color: #171717;
     border: 5px solid #000000;
+    text-align: center;
+    font-weight: bolder;
+    font-size: 20px;
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+
     z-index: 10;
 
     display: grid;
