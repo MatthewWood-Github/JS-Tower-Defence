@@ -3,53 +3,65 @@ currentUnit = null;
 var possibleUnits = {
     Shanks: {
         name: "Shanks",
-        cost: 1050,
+        cost: 1550,
         damage: 200,
-        range: 250,
-        attackSpeed: 1800,
+        damageTarget: "AOE",
+        damageTargetRange: 100,
+        range: 400,
+        attackSpeed: 6500,
         spriteSource: "Sprites/Shanks01-outline-green.png",
         maxNumber: 1,
+        abilityCooldown: 20000,
+        stunLength: 5000,
         upgrades: {
-            1: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            2: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            3: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            4: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            5: {cost: 200, damage: 5, range: 25, attackSpeed: 200}
+            1: {cost: 2000, damage: 300, range: 0, attackSpeed: 600},
+            2: {cost: 2500, damage: 500, range: 25, attackSpeed: 600},
+            3: {cost: 4000, damage: 1600, range: 25, attackSpeed: 600},
+            4: {cost: 6000, damage: 2400, range: 25, attackSpeed: 600},
+            5: {cost: 10000, damage: 5000, range: 25, attackSpeed: 600}
         }
     },
 
     Perona: {
         name: "Perona",
-        cost: 530,
-        damage: 30,
+        cost: 650,
+        damage: 50,
+        damageTarget: "Single",
+        damageTargetRange: 100,
         range: 550,
-        attackSpeed: 1100,
+        attackSpeed: 5000,
         spriteSource: "Sprites/Perona01-outline-green.png",
         maxNumber: 3,
+        abilityCooldown: 0,
+        slowFactor: 0.5,
+        slowLength: 2000,
         upgrades: {
-            1: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            2: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            3: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            4: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
-            5: {cost: 200, damage: 5, range: 25, attackSpeed: 200}
-        }
+            1: {cost: 1000, damage: 50, range: 0, attackSpeed: 0},
+            2: {cost: 1500, damage: 100, range: 0, attackSpeed: 200},
+            3: {cost: 2500, damage: 300, range: 0, attackSpeed: 200},
+            4: {cost: 3500, damage: 500, range: 25, attackSpeed: 400},
+            5: {cost: 5000, damage: 500, range: 25, attackSpeed: 1000}
+        } //          13500         2500       600               3s
     },
 
     Jotaro: {
         name: "Jotaro",
         cost: 300,
         damage: 5,
+        damageTarget: "AOE",
+        damageTargetRange: 100,
         range: 350,
-        attackSpeed: 2000,
+        attackSpeed: 4000,
         spriteSource: "Sprites/Jotaro01-outline-green.png",
         maxNumber: 3,
+        abilityCooldown: 0,
         upgrades: {
-            1: {cost: 200, damage: 5, range: 25, attackSpeed: 100},
-            2: {cost: 500, damage: 10, range: 25, attackSpeed: 100},
-            3: {cost: 1000, damage: 30, range: 0, attackSpeed: 100},
-            4: {cost: 2500, damage: 50, range: 0, attackSpeed: 100},
-            5: {cost: 3750, damage: 100, range: 0, attackSpeed: 200}
-        }
+            1: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
+            2: {cost: 500, damage: 40, range: 25, attackSpeed: 400},
+            3: {cost: 1000, damage: 50, range: 0, attackSpeed: 400},
+            4: {cost: 2500, damage: 100, range: 0, attackSpeed: 400},
+            5: {cost: 3750, damage: 200, range: 0, attackSpeed: 400}
+        } //          9250          400 (2000)  400             2.2s
     }
 }
 
@@ -76,7 +88,7 @@ const possibleEnemies = {
         y: startPos.y,
         value: 250,
 
-        upgrades: {health: 50, value: 50}
+        upgrades: {health: 250, value: 50}
     },
 
     Paul: {
@@ -88,7 +100,7 @@ const possibleEnemies = {
         y: startPos.y,
         value: 100,
 
-        upgrades: {health: 50, value: 50}
+        upgrades: {health: 250, value: 50}
     },
 
     Greedo: {
@@ -100,19 +112,19 @@ const possibleEnemies = {
         y: startPos.y,
         value: 100,
 
-        upgrades: {health: 50, value: 50}
+        upgrades: {health: 150, value: 100}
     },
 
     Troll: {
         name: "Troll",
-        health: 2000,
+        health: 0,
         speed: speed.boss,
         sprite: "Sprites/trollface.jpg",
         x: startPos.x,
         y: startPos.y,
         value: 1000,
 
-        upgrades: {health: 50, value: 50}
+        upgrades: {health: 5500, value: 200}
     }
 }
 
@@ -131,51 +143,55 @@ const track = {
 
 const waves = {
     1: [
-        {enemy: "greedo", quantity: 3, interval: 400},
+        {enemy: "greedo", quantity: 3, interval: 400, timeout: 0},
+        {enemy: "greedo", quantity: 3, interval: 400, timeout: 3000},
     ],
     2: [
-        {enemy: "greedo", quantity: 6, interval: 500},
+        {enemy: "greedo", quantity: 3, interval: 500, timeout: 0},
+        {enemy: "greedo", quantity: 6, interval: 500, timeout: 6000},
     ],
     3: [
-        {enemy: "greedo", quantity: 6, interval: 300},
-        {enemy: "paul", quantity: 1, interval: 3000},
+        {enemy: "greedo", quantity: 6, interval: 300, timeout: 0},
+        {enemy: "paul", quantity: 2, interval: 3000, timeout: 1000},
+        {enemy: "greedo", quantity: 3, interval: 500, timeout: 6000},
     ],
-    4: [{enemy: "greedo", quantity: 6, interval: 300},
-        {enemy: "paul", quantity: 2, interval: 4000},
-        {enemy: "greedo", quantity: 1, interval: 5000},
-        {enemy: "greedo", quantity: 1, interval: 5500},
-        {enemy: "greedo", quantity: 1, interval: 6000},
-        {enemy: "greedo", quantity: 1, interval: 6500},
-        {enemy: "greedo", quantity: 1, interval: 7000},
+    4: [{enemy: "greedo", quantity: 3, interval: 300, timeout: 0},
+        {enemy: "paul", quantity: 1, interval: 4000, timeout: 1000},
+        {enemy: "greedo", quantity: 3, interval: 300, timeout: 5000},
+        {enemy: "paul", quantity: 1, interval: 4000, timeout: 5000},
+        {enemy: "greedo", quantity: 3, interval: 300, timeout: 1000},
     ],
-    5: [{enemy: "greedo", quantity: 6, interval: 300},
-        {enemy: "paul", quantity: 2, interval: 4000},
-        {enemy: "troll", quantity: 1, interval: 5000},
-        {enemy: "greedo", quantity: 1, interval: 5000},
-        {enemy: "greedo", quantity: 1, interval: 5500},
-        {enemy: "greedo", quantity: 1, interval: 6000},
-        {enemy: "greedo", quantity: 1, interval: 6500},
-        {enemy: "greedo", quantity: 1, interval: 7000},
+    5: [{enemy: "greedo", quantity: 6, interval: 300, timeout: 0},
+        {enemy: "paul", quantity: 1, interval: 4000, timeout: 7000}, 
+        {enemy: "troll", quantity: 1, interval: 5000, timeout: 1000},
+        {enemy: "paul", quantity: 1, interval: 4000, timeout: 12000}, 
     ],
-    6: [{enemy: "greedo", quantity: 6, interval: 300},
-        {enemy: "troll", quantity: 1, interval: 5000},
-        {enemy: "takeoff", quantity: 1, interval: 10000},
+    6: [{enemy: "greedo", quantity: 12, interval: 300, timeout: 0},
+        {enemy: "takeoff", quantity: 1, interval: 4000, timeout: 7000}, 
+        {enemy: "troll", quantity: 2, interval: 10000, timeout: 1000},
+        {enemy: "takeoff", quantity: 1, interval: 4000, timeout: 16000}, 
     ],
     7: [
-        {enemy: "troll", quantity: 1, interval: 1000},
-        {enemy: "greedo", quantity: 6, interval: 300},
-        {enemy: "paul", quantity: 1, interval: 3000},
+        {enemy: "paul", quantity: 12, interval: 400, timeout: 0},
     ],
-    8: [],
-    9: [],
+    8: [
+        {enemy: "takeoff", quantity: 5, interval: 1000, timeout: 0},
+        {enemy: "troll", quantity: 2, interval: 5000, timeout: 2000},
+        {enemy: "takeoff", quantity: 5, interval: 1000, timeout: 15000},
+    ],
+    9: [
+        {enemy: "takeoff", quantity: 5, interval: 1000, timeout: 0},
+        {enemy: "troll", quantity: 2, interval: 5000, timeout: 1000},
+        {enemy: "takeoff", quantity: 5, interval: 1000, timeout: 15000},
+    ],
     10: [
-        
+        {enemy: "troll", quantity: 3, interval: 5000, timeout: 0},
     ]
 }
 
 const heartIcon = new Image();
 heartIcon.src = "Sprites/heart.png";
-var health = 200;
+var health = 1500;
 var money = 500;
 var wave = 0;
 
@@ -255,6 +271,9 @@ class Unit {
         this.sprite.zIndex = 2;
         this.level = 0;
 
+        this.abilityCooldown = possibleUnits[name].abilityCooldown;
+        this.lastAbility = 0;
+
         this.targetingOptions = ["First", "Last", "Strong", "Weak", "Close", "Far"];
         this.targetingIndex = 0;
         this.targeting = this.targetingOptions[this.targetingIndex];
@@ -276,10 +295,24 @@ class Unit {
         if (target === undefined) return;
         if (this.canAttack()) {
             this.lastAttack = Date.now();
-            target.health -= this.damage;
-            
-            if (!(target === null)) target.kill();
+
+            switch (possibleUnits[this.name].damageTarget) {
+                case "Single":
+                    attackSingle();
+                    break;
+                case "AOE":
+                    attackAOE();
+                    break;
+            }
         }
+    }
+
+    attackSingle(target) {
+        return;
+    }
+
+    attackAOE(target) {
+        return;
     }
 
     canAttack() {
@@ -290,6 +323,26 @@ class Unit {
 
     ability() {
         return;
+    }
+
+    canUseAbility() {
+        if  (this.lastAbility == 0) return true;
+        if (Date.now() >= this.lastAbility + this.abilityCooldown) return true;
+        else return false;
+    }
+
+    startAbilityTimer(ability, unit) {
+        let cooldown = document.createElement("div");
+        cooldown.classList.add("ability-cooldown");
+        ability.appendChild(cooldown);
+        let pixelpos = 0;
+
+        let timer = setInterval(function() {
+            if (unit.canUseAbility()) {ability.removeChild(cooldown); clearInterval(timer); console.log("DONE")};
+            pixelpos += cooldown.offsetWidth/unit.abilityCooldown*1000;
+            console.log(pixelpos);
+            cooldown.style.left = `${pixelpos}px`;
+        }, 1000);
     }
 
     getAdjustedPosition() {
@@ -409,10 +462,34 @@ class Perona extends Unit {
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
             target.health -= damagePerHit;
-            target.slow(0.5, 5000)
+            target.slow(possibleUnits[this.name].slowFactor, possibleUnits[this.name].slowLength)
             if (!(target === null)) target.kill();
         }
     }
+}
+
+class Shanks extends Unit {
+    place(x, y) {
+        super.place(x,y);
+        let abilityBar = document.getElementById("ability-bar");
+        let elem = document.createElement("div");
+        elem.classList.add("ability");
+        elem.style.backgroundImage = "url('Sprites/shanks-ability.png')";
+        elem.onclick = () => {this.ability(elem, this)};
+        abilityBar.appendChild(elem);
+    }
+
+    ability(elem, unit,) {
+        if (unit.canUseAbility()) {
+            unit.enemyQueue.forEach(enemy => {
+                enemy.stun(possibleUnits[this.name].stunLength);
+                enemy.health -= unit.damage;
+                enemy.kill();
+            });
+            this.lastAbility = Date.now();
+            unit.startAbilityTimer(elem, unit);
+        };
+    };
 }
 
 class Enemy {
@@ -423,6 +500,7 @@ class Enemy {
         this.maxSpeed = possibleEnemies[name].speed;
         this.speed = possibleEnemies[name].speed;
         this.slowed = false;
+        this.stunned = false;
         this.img = new Image();
         this.img.src = possibleEnemies[name].sprite;
         this.x = possibleEnemies[name].x;
@@ -468,7 +546,7 @@ class Enemy {
 
     slow(magnitude, duration)
     {
-        if (this.slowed == false) {
+        if (this.slowed == false && this.stunned == false) {
             this.speed *= magnitude;
             this.slowed = true;
             setTimeout(() => {this.speed = this.maxSpeed; this.slowed = false;}, duration);
@@ -477,9 +555,9 @@ class Enemy {
 
     stun(duration)
     {
-        this.speed *= magnitude;
+        this.stunned = true;
         this.speed = 0;
-        setTimeout(() => {this.speed = this.maxSpeed;}, duration);
+        setTimeout(() => {this.speed = this.maxSpeed; this.stunned = false;}, duration);
     }
 
     applyWaveMultiplier() {
@@ -498,7 +576,7 @@ class Enemy {
 function createUnit(id) {
     switch (id) {
         case "Shanks":
-            currentUnit = new Unit("Shanks");
+            currentUnit = new Shanks("Shanks");
             break;
         case "Perona":
             currentUnit = new Perona("Perona");
@@ -693,14 +771,16 @@ function start() {
 
 function spawnWave(wave) {
     waves[wave].forEach(enemySet => {
-        let counter = 0;
-        let spawn = setInterval(function() {
-            createEnemy(enemySet.enemy);
-            counter++;
-
-            if (counter >= enemySet.quantity) clearInterval(spawn);
-
-        }, enemySet.interval);
+        setTimeout(function() {
+            let counter = 0;
+            let spawn = setInterval(function() {
+                createEnemy(enemySet.enemy);
+                counter++;
+    
+                if (counter >= enemySet.quantity) clearInterval(spawn);
+    
+            }, enemySet.interval);
+        }, enemySet.timeout);
     })
 }
 
