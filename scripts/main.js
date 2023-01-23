@@ -1,6 +1,27 @@
-currentUnit = null;
+var font = "slksrc";
+var currentUnit = null;
 
 var possibleUnits = {
+    Valentine: {
+        name: "Valentine",
+        cost: 300,
+        damage: 5,
+        damageTarget: "AOE",
+        damageTargetRange: 100,
+        range: 350,
+        attackSpeed: 4000,
+        spriteSource: "Sprites/Valentine01-outline-green.png",
+        maxNumber: 3,
+        abilityCooldown: 0,
+        upgrades: {
+            1: {cost: 200, damage: 5, range: 25, attackSpeed: 200},
+            2: {cost: 500, damage: 40, range: 25, attackSpeed: 400},
+            3: {cost: 1000, damage: 50, range: 0, attackSpeed: 400},
+            4: {cost: 2500, damage: 100, range: 0, attackSpeed: 400},
+            5: {cost: 3750, damage: 200, range: 0, attackSpeed: 400}
+        } //          9250          400 (2000)  400             2.2s
+    },
+
     Shanks: {
         name: "Shanks",
         cost: 1550,
@@ -63,6 +84,7 @@ var possibleUnits = {
             5: {cost: 3750, damage: 200, range: 0, attackSpeed: 400}
         } //          9250          400 (2000)  400             2.2s
     }
+    
 }
 
 const startPos = {x: 0, y: 256};
@@ -232,7 +254,7 @@ var shopOptions = [];
 function populateOptions() {
     shopOptions = document.getElementById("shop-options").children;
     for (elem of shopOptions) {
-        elem.innerHTML = `£${possibleUnits[elem.id].cost}`;
+        elem.innerHTML = `$${possibleUnits[elem.id].cost}`;
     }
 }
 
@@ -251,10 +273,13 @@ function buttonAnimation(id) {
     elem.classList.remove("button-animation"); 
     void elem.offsetWidth;
     elem.classList.add("button-animation");
-    createUnit(id);
-    
-    currentShopUnit = elem;
     updateBorders();
+}
+
+function shopButtonAnimation(id) {
+    createUnit(id);
+    currentShopUnit = elem;
+    buttonAnimation(id);
 }
 
 // Classes ===============================================================================
@@ -278,6 +303,7 @@ class Unit {
         this.targetingIndex = 0;
         this.targeting = this.targetingOptions[this.targetingIndex];
         this.lastAttack = 0;
+        this.damageTargetRange = possibleUnits[name].damageTargetRange;
 
         this.enemyQueue = [];
     }
@@ -298,21 +324,34 @@ class Unit {
 
             switch (possibleUnits[this.name].damageTarget) {
                 case "Single":
-                    attackSingle();
+                    this.attackSingle(target);
                     break;
                 case "AOE":
-                    attackAOE();
+                    this.attackAOE(target);
                     break;
             }
         }
     }
 
     attackSingle(target) {
-        return;
+        target.health-=this.damage;
+        target.kill();
     }
 
     attackAOE(target) {
-        return;
+        let enemiesAttacked = [];
+        for (var x = 0; x < enemies.length; x++) {
+            let distance = Math.hypot(target.getAdjustedPosition().x - enemies[x].getAdjustedPosition().x,
+                                      target.getAdjustedPosition().y - enemies[x].getAdjustedPosition().y);
+            if (distance <= this.damageTargetRange && !enemiesAttacked.includes(enemies[x])) {
+                enemiesAttacked.push(enemies[x]);
+                enemies[x].health -= this.damage;
+                if (enemies[x].health <= 0) {
+                    enemies[x].kill();
+                    x = -1;
+                }
+            }
+        }
     }
 
     canAttack() {
@@ -338,9 +377,8 @@ class Unit {
         let pixelpos = 0;
 
         let timer = setInterval(function() {
-            if (unit.canUseAbility()) {ability.removeChild(cooldown); clearInterval(timer); console.log("DONE")};
+            if (unit.canUseAbility()) {ability.removeChild(cooldown); clearInterval(timer);};
             pixelpos += cooldown.offsetWidth/unit.abilityCooldown*1000;
-            console.log(pixelpos);
             cooldown.style.left = `${pixelpos}px`;
         }, 1000);
     }
@@ -444,13 +482,33 @@ class Jotaro extends Unit {
             let timeBetweenHits = 125;
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
-            
+            let enemiesAttacked = [];
+
+            for (var x = 0; x < enemies.length; x++) {
+                let distance = Math.hypot(target.getAdjustedPosition().x - enemies[x].getAdjustedPosition().x,
+                                        target.getAdjustedPosition().y - enemies[x].getAdjustedPosition().y);
+                if (distance <= this.damageTargetRange && !enemiesAttacked.includes(enemies[x])) {
+                    enemiesAttacked.push(enemies[x]);
+                };              
+            }
+
             let attackRush = setInterval(function() {
-                target.health -= damagePerHit;
-                if (!(target === null)) target.kill();
+                for (var i = 0; i < enemiesAttacked.length; i++) {
+                    enemiesAttacked[i].health -= damagePerHit;
+                }
+
+                for (var y = 0; y < enemies.length; y++) {
+                    if (enemies[y].health <= 0) {
+                        enemies[y].kill();
+                        y = -1;
+                    }
+                };  
+                
                 counter++;
                 if (counter >= numberOfAttacks) clearInterval(attackRush);
-            }, timeBetweenHits)
+            }, timeBetweenHits);
+            
+                        
         }
     }
 }
@@ -458,7 +516,7 @@ class Jotaro extends Unit {
 class Perona extends Unit {
     attack(target) {
         if (target === undefined) return;
-        if (this.canAttack()) {
+        if (this.canAttack() && target.sunned === false) {
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
             target.health -= damagePerHit;
@@ -584,6 +642,9 @@ function createUnit(id) {
         case "Jotaro":
             currentUnit = new Jotaro("Jotaro");
             break;
+        case "Valentine":
+            currentUnit = new Unit("Valentine");
+            break;
     }
 }
 
@@ -613,7 +674,7 @@ function getMousePos(e) {
 }
 
 function checkWin() {
-    if (health <= 0) health = 200;
+    if (health <= 0) location.reload();;
 }
 
 // Canvas =========================================================================================
@@ -639,7 +700,7 @@ function detectRange(unit) {
 
     ctx.strokeStyle = 'red';
     ctx.lineWidth = 5;
-    ctx.font = "16px Arial";
+    ctx.font = `16px ${font}`;
 
     let unitCenterX = unit.getAdjustedPosition().x;
     let unitCenterY = unit.getAdjustedPosition().y;
@@ -676,21 +737,21 @@ function drawUnits() {
 }
 
 function drawHealth() {
-    ctx.drawImage(heartIcon, 8, 0, 128, 128);
-    ctx.font = "64px Arial";
-    drawStrokedText(health, 200, 80);
+    ctx.drawImage(heartIcon, 8, 28, 64, 64);
+    ctx.font = `64px ${font}`;
+    drawStrokedText(health, 170, 80);
 }
 
 function drawMoney() {
     // ctx.drawImage(heartIcon, 8, 0, 128, 128);
-    ctx.font = "64px Arial";
-    drawStrokedText(`£${money}`, 1336, 80);
+    ctx.font = `64px ${font}`;
+    drawStrokedText(`$${money}`, 420, 80);
 }
 
 function drawWave() {
     // ctx.drawImage(heartIcon, 8, 0, 128, 128);
-    ctx.font = "64px Arial";
-    drawStrokedText(`Wave: ${wave}`, 450, 80);
+    ctx.font = `64px`;
+    drawStrokedText(`Wave: ${wave}`, 1336, 80);
 }
 
 function drawStrokedText(text, x, y) {
@@ -704,7 +765,7 @@ function drawStrokedText(text, x, y) {
 
 // Checkwin
 function drawEnemies() {
-    ctx.font = "32px Arial";
+    ctx.font = `32px Arial`;
     enemies.forEach(obj => {
         // Replace with health bar
         if (debug === true) drawStrokedText(`${obj.health} ${obj.progress} ${Math.round(obj.getDistanceToNext())}`, obj.x + 64, obj.y - 32);
@@ -770,6 +831,7 @@ function start() {
 }
 
 function spawnWave(wave) {
+    if (wave > Object.keys(waves).length) location.reload();
     waves[wave].forEach(enemySet => {
         setTimeout(function() {
             let counter = 0;
@@ -782,6 +844,26 @@ function spawnWave(wave) {
             }, enemySet.interval);
         }, enemySet.timeout);
     })
+}
+
+function getEnemiesLeft() {
+    let output = {};
+    Object.keys(waves).forEach(wave => {
+        output[wave] = 0;
+        waves[wave].forEach(enemySet => {
+            output[wave] += enemySet.quantity;
+        })
+    })
+    return output;
+}
+
+function gameManager() {
+    setTimeout(() => {
+        
+    }, );
+    for(var x = 1; x < Object.keys(waves).length+1; x++) {
+        spawnWave(x)
+    }
 }
 
 addEventListener("keydown", (e) => {
@@ -799,7 +881,7 @@ addEventListener("keydown", (e) => {
             createEnemy("troll");
             break;
         case ("t"):
-            spawnWave(++wave);
+            console.table(getEnemiesLeft());
             break;   
         case ("m"):
             money += 10000;
@@ -839,6 +921,28 @@ function showUnitUpgrade(unit) {
     elem.style.top = `${unit.y}px`;
     elem.onmouseenter = () => {elem.style.zIndex = ++highestZIndex};
 
+    elem.appendChild(createTargetingButton(unit));
+    elem.appendChild(createIcon("url('Sprites/damage-icon.png')", unit.damage));
+    elem.appendChild(createIcon("url('Sprites/attack-speed.png')", unit.attackSpeed/1000));
+    elem.appendChild(createIcon("url('Sprites/attack-range.png')", unit.range));
+    elem.appendChild(createUpgradeButton(unit));
+
+    elem.style.zIndex = ++highestZIndex;
+
+    document.getElementById("main").appendChild(elem);
+}
+
+function createIcon(sprite, stat) {
+    let icon = document.createElement("div");
+    icon.style.backgroundImage = sprite;
+    icon.style.backgroundSize = "cover";
+
+    icon.style.width = "1fr";
+    icon.innerHTML = stat;
+    return icon;
+}
+
+function createTargetingButton(unit) {
     let targetingButton = document.createElement("button");
     targetingButton.style.width = "2fr";
     targetingButton.style.backgroundColor = "#2d2d2d";
@@ -850,32 +954,10 @@ function showUnitUpgrade(unit) {
         showUnitUpgrade(unit);
         document.getElementById("main").removeChild(elem);
     }
-    elem.appendChild(targetingButton);
+    return targetingButton;
+}
 
-    let unitAttack = document.createElement("div");
-    unitAttack.style.backgroundImage = "url('Sprites/damage-icon.png')";
-    unitAttack.style.backgroundSize = "cover";
-
-    unitAttack.style.width = "1fr";
-    unitAttack.innerHTML = unit.damage;
-    elem.appendChild(unitAttack);
-
-    let unitAttackSpeed = document.createElement("div");
-    unitAttackSpeed.style.backgroundImage = "url('Sprites/attack-speed.png')";
-    unitAttackSpeed.style.backgroundSize = "cover";
-
-    unitAttackSpeed.style.width = "1fr";
-    unitAttackSpeed.innerHTML = unit.attackSpeed/1000;
-    elem.appendChild(unitAttackSpeed);
-
-    let unitRange = document.createElement("div");
-    unitRange.style.backgroundImage = "url('Sprites/attack-range.png')";
-    unitRange.style.backgroundSize = "cover";
-
-    unitRange.style.width = "1fr";
-    unitRange.innerHTML = unit.range;
-    elem.appendChild(unitRange);
-
+function createUpgradeButton(unit) {
     let upgradeButton = document.createElement("button");
     upgradeButton.style.width = "1fr";
     upgradeButton.style.backgroundImage = "url('Sprites/upgrade-icon.png')";
@@ -889,6 +971,7 @@ function showUnitUpgrade(unit) {
         costMenu.classList.add("show-cost");
         costMenu.style.left = `${unit.x + 175}px`;
         costMenu.style.top = `${unit.y - 45}px`;
+        costMenu.style.zIndex = ++highestZIndex;
         if (unit.level >= Object.keys(possibleUnits[unit.name].upgrades).length) costMenu.innerHTML = "Max";
         else costMenu.innerHTML = `£${upgrades[unit.level+1].cost}`;
 
@@ -899,7 +982,6 @@ function showUnitUpgrade(unit) {
         document.getElementById("main").removeChild(costMenu);
     };
 
-    elem.style.zIndex = ++highestZIndex;
     upgradeButton.onclick = () => {
         if (unit.level >= Object.keys(possibleUnits[unit.name].upgrades).length) return;
         
@@ -912,9 +994,7 @@ function showUnitUpgrade(unit) {
         };
     };
 
-    elem.appendChild(upgradeButton);
-
-    document.getElementById("main").appendChild(elem);
+    return upgradeButton;
 }
 
 canvas.addEventListener("mousedown", () => {

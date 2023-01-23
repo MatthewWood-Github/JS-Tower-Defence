@@ -5,6 +5,7 @@
         <title> Tower Defense </title>
         <link rel="shortcut icon" type="image/x-icon" href="favicon.png" />
         <link rel="stylesheet" href="default.css">
+        <link  rel="stylesheet" href="https://fonts.cdnfonts.com/css/common-pixel">
         
     </head>
     <body>
@@ -16,12 +17,16 @@
 
             <aside class="shop", id="shop-container">
                 <ul id="shop-options">
-                    <li class="unit-slot" id="Jotaro" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/Jotaro01.png'); background-color: #ff7979;"> £500 </li>
+                    <li class="unit-slot" id="Jotaro" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Jotaro01.png'); background-color: #ff7979;"> £500 </li>
 
-                    <li class="unit-slot" id="Perona" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/Perona01.png'); background-color: #ff7979;"> £530 </li>
+                    <li class="unit-slot" id="Perona" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Perona01.png'); background-color: #ff7979;"> £530 </li>
 
-                    <li class="unit-slot" id="Shanks" onclick="buttonAnimation(this.id)" style="background-image: url('Sprites/Shanks01.png'); background-color: #ff7979;"> £1050 </li>                  
+                    <li class="unit-slot" id="Valentine" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Valentine01.png'); background-color: #ff7979;"> £1050 </li>  
+
+                    <li class="unit-slot" id="Shanks" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Shanks01.png'); background-color: #ff7979;"> £1550 </li>                  
                 </ul>
+
+                <button class="next-wave" id="next-wave" onclick="spawnWave(++wave); buttonAnimation(this.id);"></button>
             </aside>
         </main>
         <script src="scripts/main.js"></script>
