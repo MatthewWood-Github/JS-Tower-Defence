@@ -10,23 +10,22 @@
     </head>
     <body>
         <main class="main" id="main">
-
-            <canvas class="game" id="game" width="1536" height="1024"> </canvas>
-            
             <div class="ability-bar" id="ability-bar"> </div> 
-
+            
+            <canvas class="game" id="game" width="1536" height="1024"></canvas>
+            
             <aside class="shop", id="shop-container">
                 <ul id="shop-options">
-                    <li class="unit-slot" id="Jotaro" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Jotaro01.png'); background-color: #ff7979;"> £500 </li>
+                    <li class="unit-slot" id="Jotaro" onclick="shopAction(this.id)" onmousedown="shopButtonAnimation(this.id)" onmouseleave="undim(this.id)" style="background-image: url('Sprites/Jotaro01.png'); background-color: #ff7979;"> £500 </li>
 
-                    <li class="unit-slot" id="Perona" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Perona01.png'); background-color: #ff7979;"> £530 </li>
+                    <li class="unit-slot" id="Perona" onclick="shopAction(this.id)" onmousedown="shopButtonAnimation(this.id)" onmouseleave="undim(this.id)" style="background-image: url('Sprites/Perona01.png'); background-color: #ff7979;"> £530 </li>
 
-                    <li class="unit-slot" id="Valentine" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Valentine01.png'); background-color: #ff7979;"> £1050 </li>  
+                    <li class="unit-slot" id="Valentine" onclick="shopAction(this.id)" onmousedown="shopButtonAnimation(this.id)"  onmouseleave="undim(this.id)"style="background-image: url('Sprites/Valentine01.png'); background-color: #ff7979;"> £1050 </li>  
 
-                    <li class="unit-slot" id="Shanks" onclick="shopButtonAnimation(this.id)" style="background-image: url('Sprites/Shanks01.png'); background-color: #ff7979;"> £1550 </li>                  
+                    <li class="unit-slot" id="Shanks" onclick="shopAction(this.id)" onmousedown="shopButtonAnimation(this.id)" onmouseleave="undim(this.id)" style="background-image: url('Sprites/Shanks01.png'); background-color: #ff7979;"> £1550 </li>                  
                 </ul>
 
-                <button class="next-wave" id="next-wave" onclick="spawnWave(++wave); buttonAnimation(this.id);"></button>
+                <button class="next-wave" id="next-wave" onclick="spawnWave(++wave)" onmousedown="shopButtonAnimation(this.id)" onmouseleave="undim(this.id)" onmouseup="undim(this.id)"></button>
             </aside>
         </main>
         <script src="scripts/main.js"></script>

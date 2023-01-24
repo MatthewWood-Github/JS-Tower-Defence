@@ -216,6 +216,7 @@ heartIcon.src = "Sprites/heart.png";
 var health = 1500;
 var money = 500;
 var wave = 0;
+var playing = true;
 
 var mouseX = 0;
 var mouseY = 0;
@@ -232,7 +233,7 @@ const enemyAdjustedSize = enemySize/2;
 const enemyCollisionForgiveness = 20;
 
 const enemies = [];
-const units = [];
+var units = [];
 
 function getNumberOfUnits(unit) {
     if (unit === null) return;
@@ -242,6 +243,9 @@ function getNumberOfUnits(unit) {
     })
     return count;
 }
+
+var enemiesKilled = 0;
+var waveEnemiesKilled = 0;
 
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -268,18 +272,21 @@ function updateBorders() {
     currentShopUnit.style.borderColor = "yellow";
 }
 
-function buttonAnimation(id) {
+function shopButtonAnimation(id) {
     elem = document.getElementById(id)
-    elem.classList.remove("button-animation"); 
-    void elem.offsetWidth;
     elem.classList.add("button-animation");
+    elem.style.filter = ("brightness(0.5)");
     updateBorders();
 }
 
-function shopButtonAnimation(id) {
+function undim(id) {
+    document.getElementById(id).style.filter = ("brightness(1)");
+}
+
+function shopAction(id) {
     createUnit(id);
     currentShopUnit = elem;
-    buttonAnimation(id);
+    document.getElementById(id).style.filter = ("brightness(1)")
 }
 
 // Classes ===============================================================================
@@ -516,7 +523,7 @@ class Jotaro extends Unit {
 class Perona extends Unit {
     attack(target) {
         if (target === undefined) return;
-        if (this.canAttack() && target.sunned === false) {
+        if (this.canAttack() && target.stunned === false) {
             let damagePerHit = this.damage;
             this.lastAttack = Date.now();
             target.health -= damagePerHit;
@@ -598,6 +605,8 @@ class Enemy {
             if (enemies[enemies.indexOf(this)] === this) {
                 money += this.value;
                 enemies.splice(enemies.indexOf(this), 1);
+                enemiesKilled++;
+                waveEnemiesKilled++;
             }
         } 
     }
@@ -674,7 +683,12 @@ function getMousePos(e) {
 }
 
 function checkWin() {
-    if (health <= 0) location.reload();;
+    if (health <= 0) {
+        health = 0;
+        createOutcomeScreen("You Lost!", "Retry");
+        playing = false;
+        units = [];
+    }
 }
 
 // Canvas =========================================================================================
@@ -771,15 +785,17 @@ function drawEnemies() {
         if (debug === true) drawStrokedText(`${obj.health} ${obj.progress} ${Math.round(obj.getDistanceToNext())}`, obj.x + 64, obj.y - 32);
         else drawStrokedText(`${obj.health}`, obj.x + 64, obj.y - 32);
         
-
         // Sprite
         ctx.drawImage(obj.img, obj.x, obj.y, 128, 128);
 
         // Kill object at end
         if (obj.progress == track["nodes"].length-1) {
             enemies.splice(enemies.indexOf(obj), 1)
-            health -= obj.health;
-            checkWin();
+            if (playing === true) {
+                health -= obj.health;
+                waveEnemiesKilled++;
+                checkWin();
+            };
             return;
         }
 
@@ -818,21 +834,30 @@ function draw() {
     drawHealth();
     drawMoney();
     drawWave();
+    gameManager();
 
     ctx.drawImage(track["img"], 0, 0);
-    requestAnimationFrame(draw);
+    gameLoop = requestAnimationFrame(draw);
 }
 
 // Gameloop =====================================================================================
 
 function start() { 
     track["img"].src = track["sprite"];
-    requestAnimationFrame(draw);
+    gameLoop = requestAnimationFrame(draw);
 }
 
-function spawnWave(wave) {
-    if (wave > Object.keys(waves).length) location.reload();
-    waves[wave].forEach(enemySet => {
+function spawnWave(_wave) {
+    if (playing === false) return;
+
+    if (_wave > Object.keys(waves).length) { 
+        wave = Object.keys(waves).length; 
+        createOutcomeScreen("You Won!", "Replay"); 
+        playing = false
+        document.getElementById("next-wave").onclick = "";
+    }
+    
+    waves[_wave].forEach(enemySet => {
         setTimeout(function() {
             let counter = 0;
             let spawn = setInterval(function() {
@@ -857,13 +882,107 @@ function getEnemiesLeft() {
     return output;
 }
 
-function gameManager() {
+function createWaveText() {
+    let messageContainer = document.createElement("div");
+    messageContainer.classList.add("next-wave-messagebox");
+
+    let header = document.createElement("div");
+    header.classList.add("next-wave-message-footer");
+
+    let footer = document.createElement("div");
+    footer.classList.add("next-wave-message-footer");
+    
+    let message = document.createElement("div");
+    message.classList.add("next-wave-message");
+    message.innerHTML = `Wave: ${wave}`;
+
+    let main = document.getElementById("main");
+
+    messageContainer.appendChild(header);
+    messageContainer.appendChild(message);
+    messageContainer.appendChild(footer);
+
+    main.appendChild(messageContainer);
+
     setTimeout(() => {
-        
-    }, );
-    for(var x = 1; x < Object.keys(waves).length+1; x++) {
-        spawnWave(x)
+        document.getElementById("main").removeChild(messageContainer);
+    }, 2500);
+}
+
+function gameManager() {
+    if (waveEnemiesKilled >= getEnemiesLeft()[wave])
+    {
+        spawnWave(++wave);
+        waveEnemiesKilled = 0;
+        createWaveText();
     }
+}
+
+function restart() {
+    location.reload();
+}
+
+function mainMenu() {
+    return;
+}
+
+function createOutcomeScreen(text, retryText) {
+    let main = document.getElementById("main");
+
+    let outcomeBox = document.createElement("div");
+    outcomeBox.classList.add("win-message");
+
+    let title = document.createElement("div");
+    title.classList.add("win-title");
+    title.innerHTML = text;
+
+    let content = document.createElement("div");
+    content.classList.add("win-content");
+
+    let next = document.createElement("div");
+    next.classList.add("win-next");
+
+    let retry = document.createElement("button");
+    retry.classList.add("win-button");
+    retry.innerHTML = retryText
+
+    retry.onmousedown = () => {
+        retry.classList.add("button-animation");
+        retry.style.filter = ("brightness(0.5)");
+    };
+
+    retry.onmouseleave = () => {retry.style.filter = ("brightness(1)");}
+
+    retry.onclick = () => {
+        retry.style.filter = ("brightness(1)")
+        restart();
+    };
+
+    let menu = document.createElement("button");
+    menu.classList.add("win-button");
+    menu.innerHTML = "Main Menu";
+    menu.onmousedown = () => {
+        menu.classList.add("button-animation");
+        menu.style.filter = ("brightness(0.5)");
+    };
+
+    menu.onmouseleave = () => {menu.style.filter = ("brightness(1)");}
+
+    menu.onclick = () => {
+        menu.style.filter = ("brightness(1)")
+        mainMenu();
+    };
+
+    let dim = document.createElement("div");
+    dim.classList.add("endgame-focus");
+    
+    outcomeBox.appendChild(title);
+    outcomeBox.appendChild(content);
+    outcomeBox.appendChild(next);
+    next.appendChild(retry);
+    next.appendChild(menu);
+    main.appendChild(dim);
+    main.appendChild(outcomeBox);
 }
 
 addEventListener("keydown", (e) => {
@@ -881,7 +1000,7 @@ addEventListener("keydown", (e) => {
             createEnemy("troll");
             break;
         case ("t"):
-            console.table(getEnemiesLeft());
+            createOutcomeScreen("You Lost!", "Retry");
             break;   
         case ("m"):
             money += 10000;
