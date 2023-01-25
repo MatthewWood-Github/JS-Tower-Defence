@@ -217,6 +217,7 @@ var health = 1500;
 var money = 500;
 var wave = 0;
 var playing = true;
+var startTime = Date.now();
 
 var mouseX = 0;
 var mouseY = 0;
@@ -926,6 +927,11 @@ function mainMenu() {
     return;
 }
 
+function millisecondsToDate(time) {
+    let hours = time/1000 * 60 * 60;
+    let minutes = time/1000 * 60;
+}
+
 function createOutcomeScreen(text, retryText) {
     let main = document.getElementById("main");
 
@@ -938,6 +944,10 @@ function createOutcomeScreen(text, retryText) {
 
     let content = document.createElement("div");
     content.classList.add("win-content");
+    let contentList = document.createElement("ul");
+    let time = Date.now()
+    let timeContent = document.createElement("ul");
+    timeContent.innerHTML = millisecondsToDate(time - startTime);
 
     let next = document.createElement("div");
     next.classList.add("win-next");
