@@ -86,7 +86,7 @@ ul {
 
 .button-animation {
     animation-name: dim-button;
-    animation-duration: 0.5s;
+    animation-duration: 0.1s;
 }
 
 @keyframes dim-button {
